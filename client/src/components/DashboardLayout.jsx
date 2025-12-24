@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Users, Award, LogOut } from 'lucide-react';
+import { Shield } from 'lucide-react';
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
@@ -45,6 +46,7 @@ const DashboardLayout = ({ children }) => {
           <NavItem icon={LayoutDashboard} label="Overview" path="/dashboard" />
           <NavItem icon={Users} label="My Network" path="/dashboard/network" />
           <NavItem icon={Award} label="Badges" path="/dashboard/badges" />
+          <NavItem icon={Shield} label="Verify Identity" path="/dashboard/kyc" />
         </nav>
 
         <div className="p-6 border-t border-white/10">

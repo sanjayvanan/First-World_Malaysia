@@ -10,8 +10,15 @@ import { query } from './shared/db.js';
 import authRoutes from './modules/auth/auth.routes.js'; 
 import referralRoutes from './modules/referrals/referral.routes.js';
 import superuserRoutes from './modules/superuser/superuser.routes.js';
+import kycRoutes from './modules/kyc/kyc.routes.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
 
 dotenv.config();
+// Define __dirname (since we are using ES Modules)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,9 +41,11 @@ app.use('/api/superuser', (req, res, next) => {
   next();
 }, superuserRoutes);
 
+
 // A. Auth Routes (Available to everyone)
 app.use('/api/auth', authRoutes); // <--- NEW: Enables /api/auth/register
 app.use('/api/referrals', referralRoutes);
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // B. Superuser Routes
 app.use('/api/admin', (req, res, next) => {
@@ -55,6 +64,7 @@ app.get('/', async (req, res) => {
     res.status(500).json({ error: 'Database connection failed' });
   }
 });
+app.use('/api/kyc', kycRoutes);
 
 // --- 3. Start Server ---
 app.listen(PORT, () => {

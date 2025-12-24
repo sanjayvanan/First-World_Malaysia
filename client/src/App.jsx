@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage'; 
 import AdminPage from './pages/AdminPage';
+import KycPage from './pages/KycPage';
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         
         {/* NEW ROUTE */}
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/dashboard/kyc" element={<KycPage />} />
         
         {/* SUPERUSER ROUTE */}
         <Route path="/admin" element={<AdminPage />} />
