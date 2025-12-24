@@ -1,19 +1,23 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, Award, LogOut } from 'lucide-react';
-import { Shield } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux'; // New
+import { logout } from '../redux/slices/authSlice'; // New
+import { LayoutDashboard, Users, Award, LogOut, Shield } from 'lucide-react';
 
 const DashboardLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const dispatch = useDispatch();
+
+  // 2. Get User from Redux Store instead of localStorage
+  const { user } = useSelector((state) => state.auth);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    dispatch(logout()); // Clean Redux way
     navigate('/login');
   };
 
+  
   const NavItem = ({ icon: Icon, label, path }) => {
     const isActive = location.pathname === path;
     return (

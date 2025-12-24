@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { submitKYC } from './kyc.controller.js';
+import { submitKYC, reviewKYC } from './kyc.controller.js';
 import { authenticateToken } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -32,5 +32,6 @@ router.post('/submit',
   upload.fields([{ name: 'idFront', maxCount: 1 }, { name: 'idBack', maxCount: 1 }]), 
   submitKYC
 );
+router.post('/review', authenticateToken, reviewKYC);
 
 export default router;

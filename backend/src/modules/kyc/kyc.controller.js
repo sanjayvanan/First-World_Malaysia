@@ -30,3 +30,27 @@ export const submitKYC = async (req, res) => {
     res.status(500).json({ error: 'Server error saving KYC' });
   }
 };
+
+
+// NEW: Approve or Reject KYC
+export const reviewKYC = async (req, res) => {
+  // admin sends: { userId: "...", status: "APPROVED" }
+  const { userId, status } = req.body; 
+  
+  try {
+    if (!['APPROVED', 'REJECTED'].includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    // Update the database
+    await query(
+      `UPDATE users SET kyc_status = $1 WHERE id = $2`,
+      [status, userId]
+    );
+
+    res.json({ message: `User KYC has been ${status}` });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error updating KYC' });
+  }
+};

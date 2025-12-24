@@ -52,8 +52,15 @@ const DashboardPage = () => {
     </div>
   );
 
-  if (loading) return <div className="text-white p-10">Loading Power-10 System...</div>;
-
+if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-full text-white/50 animate-pulse">
+          Loading Power-10 System...
+        </div>
+      </DashboardLayout>
+    );
+  }
   return (
     <DashboardLayout>
       {/* Header Section */}

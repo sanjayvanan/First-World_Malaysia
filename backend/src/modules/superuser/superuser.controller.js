@@ -3,19 +3,23 @@ import { query } from '../../shared/db.js';
 // --- 1. DASHBOARD OVERVIEW (Big Numbers) ---
 export const getSystemStats = async (req, res) => {
   try {
-    // Count total users
+    // 1. Total Users
     const userCount = await query('SELECT COUNT(*) FROM users');
     
-    // Count total referrals made
+    // 2. Total Referrals
     const referralCount = await query('SELECT SUM(direct_referrals_count) as total FROM referral_stats');
     
-    // Count Pending KYC
-    const kycCount = await query("SELECT COUNT(*) FROM users WHERE kyc_status = 'PENDING'");
+    // 3. Pending KYC
+    const pendingKycCount = await query("SELECT COUNT(*) FROM users WHERE kyc_status = 'SUBMITTED' OR kyc_status = 'PENDING'");
+    
+    // 4. Approved KYC (NEW!)
+    const approvedKycCount = await query("SELECT COUNT(*) FROM users WHERE kyc_status = 'APPROVED'");
 
     res.json({
       totalUsers: parseInt(userCount.rows[0].count),
       totalReferrals: parseInt(referralCount.rows[0].total) || 0,
-      pendingKYC: parseInt(kycCount.rows[0].count)
+      pendingKYC: parseInt(pendingKycCount.rows[0].count),
+      approvedKYC: parseInt(approvedKycCount.rows[0].count) // <--- Sending this to frontend
     });
   } catch (err) {
     console.error(err);
@@ -27,7 +31,7 @@ export const getSystemStats = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const result = await query(
-      `SELECT id, email, full_name, role, kyc_status, created_at, referral_code 
+      `SELECT id, email, full_name, role, kyc_status, created_at, referral_code, details 
        FROM users 
        ORDER BY created_at DESC 
        LIMIT 50`

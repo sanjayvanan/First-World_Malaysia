@@ -1,40 +1,29 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { loginUser } from '../redux/slices/authSlice';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  
+  // Use Redux Hooks
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { loading, error, isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    
-    try {
-      // Connect to your Backend Login API
-      const res = await axios.post('http://localhost:5000/api/auth/login', {
-        email,
-        password
-      });
-
-      // 1. Save the Token (Your "Passport")
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user', JSON.stringify(res.data.user));
-
-      // 2. Redirect based on Role
-      if (res.data.user.role === 'SUPERUSER') {
-        // FIXED: Navigate to the Admin Page instead of alerting
-        navigate('/admin'); 
-      } else {
-        navigate('/dashboard');
-      }
-
-    } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.error || 'Login failed. Check backend console.');
+  // Redirect if already logged in
+  useEffect(() => {
+    if (isAuthenticated && user) {
+        if (user.role === 'SUPERUSER') navigate('/admin');
+        else navigate('/dashboard');
     }
+  }, [isAuthenticated, user, navigate]);
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    // Dispatch the action
+    dispatch(loginUser({ email, password }));
   };
 
   return (
@@ -74,9 +63,10 @@ const LoginPage = () => {
 
           <button 
             type="submit" 
-            className="w-full bg-sairam-gold text-white font-bold py-3 rounded hover:bg-yellow-600 transition duration-300"
+            disabled={loading}
+            className="w-full bg-sairam-gold text-white font-bold py-3 rounded hover:bg-yellow-600 transition duration-300 disabled:opacity-50"
           >
-            Sign In
+            {loading ? 'Signing In...' : 'Sign In'}
           </button>
         </form>
       </div>
