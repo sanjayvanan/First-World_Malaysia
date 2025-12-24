@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage'; // <--- Import this
+import DashboardPage from './pages/DashboardPage'; 
+import AdminPage from './pages/AdminPage';
 
 function App() {
   return (
@@ -13,9 +14,10 @@ function App() {
         {/* NEW ROUTE */}
         <Route path="/dashboard" element={<DashboardPage />} />
         
-        {/* Admin Placeholder */}
-        <Route path="/admin" element={<div className="p-10">Admin Area</div>} />
+        {/* SUPERUSER ROUTE */}
+        <Route path="/admin" element={<AdminPage />} />
       </Routes>
+
     </BrowserRouter>
   );
 }

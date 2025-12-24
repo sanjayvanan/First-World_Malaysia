@@ -25,11 +25,10 @@ const LoginPage = () => {
 
       // 2. Redirect based on Role
       if (res.data.user.role === 'SUPERUSER') {
-        alert("Welcome Superuser! (Dashboard coming next)"); 
-        // navigate('/admin'); // We will build this later
+        // FIXED: Navigate to the Admin Page instead of alerting
+        navigate('/admin'); 
       } else {
-        alert("Login Successful!");
-        navigate('/dashboard'); // We will build this later
+        navigate('/dashboard');
       }
 
     } catch (err) {
