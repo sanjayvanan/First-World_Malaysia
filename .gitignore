@@ -22,3 +22,7 @@ Thumbs.db
 # Build outputs
 frontend/dist/
 frontend/build/
+
+
+#photo uploads
+backend/uploads

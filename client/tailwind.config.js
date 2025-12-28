@@ -4,28 +4,24 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  theme: {
+theme: {
     extend: {
       colors: {
-        // WORLD 1: Sai Ram (Spiritual / Landing)
-        sairam: {
-          beige: '#F5F0E6',    // The background cream color
-          gold: '#D4AF37',     // The accent gold
-          text: '#4A4A4A',     // Dark gray text
-          brown: '#8B4513',    // Earthy tones
-        },
-        
-        // WORLD 2: Maxso (Tech / Dashboard)
-        maxso: {
-          dark: '#0F172A',     // Deep blue/black background
-          card: '#1E293B',     // Lighter card background
-          glow: '#7C3AED',     // Purple neon glow
-          accent: '#38BDF8',   // Blue accent
+        sr: {
+          blue: '#041E42',      // Deep Royal Blue (Background)
+          panel: '#0B254A',     // Slightly lighter (Cards/Sidebar)
+          gold: '#C5A059',      // The Gold Border/Text
+          green: '#2ECC71',     // The Money Green
+          silver: '#BDC3C7',    // Silver Badge
         }
       },
       fontFamily: {
-        serif: ['Merriweather', 'serif'], // For Sai Ram
-        sans: ['Inter', 'sans-serif'],    // For Maxso
+        sans: ['Inter', 'sans-serif'],
+      },
+      backgroundImage: {
+        'gold-gradient': 'linear-gradient(180deg, #F3E5AB 0%, #C5A059 100%)',
+        'silver-gradient': 'linear-gradient(180deg, #F0F3F4 0%, #BDC3C7 100%)',
+        'blue-gradient': 'linear-gradient(180deg, #041E42 0%, #000000 100%)',
       }
     },
   },
