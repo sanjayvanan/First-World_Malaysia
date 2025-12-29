@@ -1,10 +1,9 @@
 import { query } from '../../shared/db.js';
 
+// --- 1. SUBMIT KYC ---
 export const submitKYC = async (req, res) => {
   const userId = req.user.id;
   
-  // req.files contains the uploaded images
-  // We assume the frontend sends 'idFront' and 'idBack'
   if (!req.files || !req.files.idFront || !req.files.idBack) {
     return res.status(400).json({ error: 'Both ID Front and Back are required' });
   }
@@ -13,8 +12,6 @@ export const submitKYC = async (req, res) => {
   const idBackPath = req.files.idBack[0].path;
 
   try {
-    // 1. Update User Status to "SUBMITTED" (Waiting for review)
-    // We also store the file paths (In a real app, you'd save these paths to a separate kyc_docs table)
     await query(
       `UPDATE users 
        SET kyc_status = 'SUBMITTED', 
@@ -23,7 +20,7 @@ export const submitKYC = async (req, res) => {
       [JSON.stringify({ front: idFrontPath, back: idBackPath }), userId]
     );
 
-    res.json({ message: 'KYC Submitted Successfully. Waiting for verification.' });
+    res.json({ message: 'KYC Submitted Successfully' });
 
   } catch (err) {
     console.error(err);
@@ -31,10 +28,25 @@ export const submitKYC = async (req, res) => {
   }
 };
 
+// --- 2. GET STATUS (NEW!) ---
+export const getKycStatus = async (req, res) => {
+  try {
+    const result = await query('SELECT kyc_status FROM users WHERE id = $1', [req.user.id]);
+    
+    if (result.rows.length === 0) return res.status(404).json({ error: 'User not found' });
 
-// NEW: Approve or Reject KYC
+    // Return the status directly (or 'PENDING' if null)
+    const status = result.rows[0].kyc_status || 'PENDING';
+    res.json({ status });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error fetching status' });
+  }
+};
+
+// --- 3. REVIEW KYC ---
 export const reviewKYC = async (req, res) => {
-  // admin sends: { userId: "...", status: "APPROVED" }
   const { userId, status } = req.body; 
   
   try {
@@ -42,11 +54,7 @@ export const reviewKYC = async (req, res) => {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    // Update the database
-    await query(
-      `UPDATE users SET kyc_status = $1 WHERE id = $2`,
-      [status, userId]
-    );
+    await query('UPDATE users SET kyc_status = $1 WHERE id = $2', [status, userId]);
 
     res.json({ message: `User KYC has been ${status}` });
   } catch (err) {

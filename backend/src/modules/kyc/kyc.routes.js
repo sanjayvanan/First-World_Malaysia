@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { submitKYC, reviewKYC } from './kyc.controller.js';
+import { submitKYC, reviewKYC, getKycStatus } from './kyc.controller.js';
 import { authenticateToken } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -26,6 +26,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+router.get('/status', authenticateToken, getKycStatus);
 // The Route: Expects 2 files named 'idFront' and 'idBack'
 router.post('/submit', 
   authenticateToken, 

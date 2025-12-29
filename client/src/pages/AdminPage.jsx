@@ -7,7 +7,9 @@ const AdminPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   
-  // Pagination State
+  // Search & Pagination State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
@@ -15,17 +17,25 @@ const AdminPage = () => {
   const navigate = useNavigate();
   const adminUser = JSON.parse(localStorage.getItem('user') || '{}');
 
+  // Debounce Logic: Wait 500ms after user stops typing
+  useEffect(() => {
+    const handler = setTimeout(() => {
+        setDebouncedSearch(searchTerm);
+        setPage(1); // Reset to page 1 on new search
+    }, 500);
+    return () => clearTimeout(handler);
+  }, [searchTerm]);
+
   useEffect(() => {
     const fetchMyUsers = async () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        // Pass page param
-        const res = await axios.get(`http://localhost:5000/api/admin/my-users?page=${page}&limit=20`, {
+        // Add search param
+        const res = await axios.get(`http://localhost:5000/api/admin/my-users?page=${page}&limit=20&search=${debouncedSearch}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        // Handle the new response structure { data, pagination }
         if (res.data.data) {
             setUsers(res.data.data);
             setTotalPages(res.data.pagination.totalPages);
@@ -42,7 +52,7 @@ const AdminPage = () => {
       }
     };
     fetchMyUsers();
-  }, [page, navigate]); // Re-run when page changes
+  }, [page, debouncedSearch, navigate]); 
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -52,7 +62,6 @@ const AdminPage = () => {
 
   return (
     <div className="min-h-screen bg-sr-blue font-sans text-gray-100">
-      {/* ... Navbar Code (Same as before) ... */}
       <nav className="bg-sr-panel border-b border-sr-gold/20 px-8 py-4 flex justify-between items-center shadow-lg">
         <div className="flex items-center space-x-4">
           <ShieldCheck className="text-sr-gold" size={28} />
@@ -86,10 +95,16 @@ const AdminPage = () => {
         </div>
 
         <div className="bg-sr-panel border border-white/10 rounded-xl overflow-hidden shadow-2xl">
-            {/* Table Header / Search (Keep search logic separate or implemented locally for now) */}
+            {/* SEARCH BAR (CONNECTED) */}
             <div className="p-4 border-b border-white/5 flex items-center bg-black/20">
                 <Search size={18} className="text-gray-500 mr-3" />
-                <input type="text" placeholder="Search..." className="bg-transparent border-none outline-none text-white text-sm w-full placeholder-gray-600"/>
+                <input 
+                    type="text" 
+                    placeholder="Search by name, email or ID..." 
+                    className="bg-transparent border-none outline-none text-white text-sm w-full placeholder-gray-600"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
 
             <div className="overflow-x-auto min-h-[300px]">
@@ -106,7 +121,7 @@ const AdminPage = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
-                            {users.map((user) => (
+                            {users.length > 0 ? users.map((user) => (
                                 <tr key={user.id} className="hover:bg-white/5 transition duration-200">
                                     <td className="px-6 py-4">
                                         <p className="font-bold text-white">{user.full_name}</p>
@@ -120,7 +135,13 @@ const AdminPage = () => {
                                         </span>
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
+                                        No users found matching "{debouncedSearch}"
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 )}
