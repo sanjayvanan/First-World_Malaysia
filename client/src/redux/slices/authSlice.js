@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// 1. ASYNC ACTION: Login User
+// 1. ASYNC ACTION: Login User (Optional - if you prefer Thunks)
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
@@ -21,7 +21,7 @@ export const loginUser = createAsyncThunk(
 
 // 2. INITIAL STATE (Load from LocalStorage on refresh)
 const token = localStorage.getItem('token');
-const user = JSON.parse(localStorage.getItem('user'));
+const user = JSON.parse(localStorage.getItem('user') || 'null'); // Fixed JSON.parse null safety
 
 const initialState = {
   user: user || null,
@@ -36,6 +36,16 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    // --- THIS IS THE MISSING REDUCER ---
+    setCredentials: (state, action) => {
+        const { user, token } = action.payload;
+        state.user = user;
+        state.token = token;
+        state.isAuthenticated = true;
+        // Sync with local storage
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', JSON.stringify(user));
+    },
     logout: (state) => {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -44,7 +54,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
     },
-    // Optional: Update user data locally (e.g. after KYC upload)
+    // Update user data locally (e.g. after KYC upload or Profile edit)
     updateUser: (state, action) => {
         state.user = { ...state.user, ...action.payload };
         localStorage.setItem('user', JSON.stringify(state.user));
@@ -69,5 +79,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, updateUser } = authSlice.actions;
+// --- EXPORT THE ACTIONS HERE ---
+export const { logout, updateUser, setCredentials } = authSlice.actions;
+
 export default authSlice.reducer;

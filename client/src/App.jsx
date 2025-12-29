@@ -4,16 +4,16 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 // Pages
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
-import NetworkPage from './pages/NetworkPage'; // Created above
+import NetworkPage from './pages/NetworkPage';
 import KycPage from './pages/KycPage';
 import AdminPage from './pages/AdminPage'; 
+import PlansPage from './pages/PlansPage'; // <--- IMPORT THE NEW PAGE
 
 // Layouts
 import DashboardLayout from './components/DashboardLayout';
 
-// Placeholder Pages for broken links (Create these files later to fully fix)
+// Placeholder Pages for remaining broken links
 const DonatePage = () => <div className="text-white text-xl p-10">Donate Page Coming Soon</div>;
-const PlansPage = () => <div className="text-white text-xl p-10">Plans Page Coming Soon</div>;
 const SettingsPage = () => <div className="text-white text-xl p-10">Settings Page Coming Soon</div>;
 const HelpPage = () => <div className="text-white text-xl p-10">Help Page Coming Soon</div>;
 
@@ -34,13 +34,10 @@ function App() {
             <DashboardLayout />
           </PrivateRoute>
         }>
-            {/* Index maps to /dashboard */}
             <Route index element={<DashboardPage />} />
-            
-            {/* Sub-routes map to /dashboard/network, /dashboard/donate, etc. */}
             <Route path="network" element={<NetworkPage />} />
             <Route path="donate" element={<DonatePage />} />
-            <Route path="plans" element={<PlansPage />} />
+            <Route path="plans" element={<PlansPage />} /> {/* <--- CONNECTED HERE */}
             <Route path="kyc" element={<KycPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="help" element={<HelpPage />} />

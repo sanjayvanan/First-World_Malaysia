@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Crown, Users, Layers } from 'lucide-react';
+import { Crown, Users, Layers, UserPlus } from 'lucide-react'; // Added UserPlus icon
 
 const DashboardPage = () => {
   const [stats, setStats] = useState(null);
@@ -42,15 +42,16 @@ const DashboardPage = () => {
     </div>
   );
 
-  const LevelCard = ({ level, count, label }) => (
+  // Updated LevelCard to accept an Icon
+  const LevelCard = ({ level, count, label, icon: Icon = Layers }) => (
     <div className="bg-gradient-to-b from-sr-panel to-black/80 border border-white/10 rounded-xl p-4 flex items-center justify-between shadow-lg">
        <div className="flex items-center gap-4">
           <div className="w-10 h-10 rounded-full bg-sr-gold/10 flex items-center justify-center text-sr-gold">
-            <Layers size={20} />
+            <Icon size={20} />
           </div>
           <div>
              <p className="text-gray-400 text-[10px] uppercase tracking-wider font-bold">{label}</p>
-             <p className="text-white text-lg font-bold">Level {level}</p>
+             <p className="text-white text-lg font-bold">{level}</p>
           </div>
        </div>
        <div className="text-2xl font-bold text-sr-gold">{count}</div>
@@ -64,14 +65,12 @@ const DashboardPage = () => {
       
       {/* SECTION 1: Top Cards & Badge */}
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left: Info Cards */}
         <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-6">
           <InfoCard title="CLIENT NAME" value={user.fullName || "User"} colorClass="text-sr-gold" />
           <InfoCard title="TOTAL DONATE" value="$0" colorClass="text-sr-green" /> 
           <InfoCard title="REFERRAL DONATE" value="$0" colorClass="text-sr-green" />
         </div>
 
-        {/* Right: Dynamic Status Badge */}
         <div className="w-full lg:w-auto flex justify-center lg:justify-end items-center">
            <div className={`relative w-32 h-32 rounded-full p-1 flex items-center justify-center border-4 ${badge.gradient} ${badge.border} ${badge.glow} transition-all duration-700`}>
               <div className="absolute inset-1 rounded-full border-2 border-white/40 dashed animate-spin-slow" />
@@ -84,15 +83,38 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* SECTION 2: Network Stats (RESTORED) */}
+      {/* SECTION 2: Network Stats (UPDATED) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-         <div className="col-span-1 md:col-span-2">
+         <div className="col-span-1 md:col-span-4"> {/* Expanded to full width */}
             <h3 className="text-white font-serif italic text-xl mb-4 flex items-center gap-2">
                <Users className="text-sr-gold" size={20}/> Network Growth
             </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-               <LevelCard level="1" count={stats?.level_1_count || 0} label="Direct Network" />
-               <LevelCard level="2" count={stats?.level_2_count || 0} label="Extended Network" />
+            
+            {/* CHANGED: Grid cols-3 to fit the new card */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+               
+               {/* 1. Direct Referrals (The New Card) */}
+               <LevelCard 
+                  level="Direct" 
+                  count={stats?.direct_referrals_count || 0} 
+                  label="My Recruits" 
+                  icon={UserPlus} 
+               />
+
+               {/* 2. Level 1 (Generation 2) */}
+               <LevelCard 
+                  level="Level 1" 
+                  count={stats?.level_1_count || 0} 
+                  label="Indirect Gen 1" 
+               />
+
+               {/* 3. Level 2 (Generation 3) */}
+               <LevelCard 
+                  level="Level 2" 
+                  count={stats?.level_2_count || 0} 
+                  label="Indirect Gen 2" 
+               />
+
             </div>
          </div>
       </div>
@@ -101,7 +123,7 @@ const DashboardPage = () => {
       <div className="flex justify-center">
         <div className="relative w-full max-w-3xl rounded-xl border-2 border-sr-gold/50 bg-black shadow-[0_0_40px_rgba(197,160,89,0.1)] overflow-hidden group">
             <div className="absolute inset-0 bg-sr-gold/5 blur-[80px] pointer-events-none" />
-            <img src="/v2.jpg" alt="Sai Baba" className="w-full h-auto max-h-[400px] object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity duration-700" />
+            <img src="/Baba.jpeg" alt="Sai Baba" className="w-full h-auto max-h-[400px] object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="absolute inset-3 border border-sr-gold/20 rounded-lg pointer-events-none" />
         </div>
       </div>

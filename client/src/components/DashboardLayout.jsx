@@ -1,25 +1,33 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Menu } from 'lucide-react'; // Import Menu Icon
+import { Menu } from 'lucide-react'; 
 import Sidebar from './Sidebar';
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="h-screen w-screen bg-sr-blue text-white font-sans flex overflow-hidden selection:bg-sr-gold selection:text-black">
+    <div className="h-screen w-screen bg-sr-blue text-white font-sansBW flex overflow-hidden selection:bg-sr-gold selection:text-black relative">
       
+      {/* FIX: Background Gradient moved here with 'fixed'. 
+        It now acts as a global wallpaper that covers the entire viewport 
+        and stays put while you scroll.
+      */}
+      <div className="fixed inset-0 bg-blue-gradient opacity-50 pointer-events-none z-0" />
+
       {/* SIDEBAR (Responsive) */}
-      <Sidebar 
-        isOpen={isSidebarOpen} 
-        onClose={() => setIsSidebarOpen(false)} 
-      />
+      {/* Added z-20 to ensure sidebar sits above the background */}
+      <div className="relative z-20 h-full flex-shrink-0">
+        <Sidebar 
+            isOpen={isSidebarOpen} 
+            onClose={() => setIsSidebarOpen(false)} 
+        />
+      </div>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 h-full overflow-y-auto relative bg-sr-blue scroll-smooth">
-         <div className="absolute inset-0 bg-blue-gradient opacity-50 pointer-events-none fixed" />
+      <main className="flex-1 h-full overflow-y-auto relative z-10 bg-transparent scroll-smooth">
         
-        <div className="p-4 md:p-8 relative z-10 max-w-[1600px] mx-auto">
+        <div className="p-4 md:p-8 max-w-[1600px] mx-auto min-h-screen">
           
           {/* HEADER: Contains Hamburger (Mobile) + Title */}
           <header className="mb-6 md:mb-10 flex items-center justify-between border-b border-white/5 pb-4">

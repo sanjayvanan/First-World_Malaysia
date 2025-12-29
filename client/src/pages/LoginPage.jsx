@@ -1,74 +1,104 @@
-import React, { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser } from '../redux/slices/authSlice';
+import { useDispatch } from 'react-redux';
+import { setCredentials } from '../redux/slices/authSlice';
+import axios from 'axios';
+import { Lock, Mail, ArrowRight } from 'lucide-react';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  // Use Redux Hooks
-  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { loading, error, isAuthenticated, user } = useSelector((state) => state.auth);
+  const dispatch = useDispatch();
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (isAuthenticated && user) {
-        if (user.role === 'SUPERUSER') navigate('/admin');
-        else navigate('/dashboard');
-    }
-  }, [isAuthenticated, user, navigate]);
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    // Dispatch the action
-    dispatch(loginUser({ email, password }));
+    setLoading(true);
+    try {
+      const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      dispatch(setCredentials({ user: res.data.user, token: res.data.token }));
+      navigate('/dashboard');
+    } catch (err) {
+      console.error(err);
+      alert('Login Failed: ' + (err.response?.data?.error || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-sairam-beige font-serif">
-      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border-t-4 border-sairam-gold">
-        <h2 className="text-3xl font-bold text-center text-sairam-text mb-2">Welcome Back</h2>
-        <p className="text-center text-gray-500 mb-8">Sign in to Sai Ram / Maxso</p>
+    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Ambient Background Effects */}
+      <div className="absolute top-0 left-1/4 w-96 h-96 bg-sr-gold/10 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-sr-green/10 rounded-full blur-[100px] pointer-events-none" />
 
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm text-center">
-            {error}
+      <div className="w-full max-w-md bg-sr-panel border border-sr-gold/20 rounded-2xl p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] relative z-10 backdrop-blur-sm">
+        
+        {/* Logo / Header */}
+        <div className="text-center mb-8">
+           <h1 className="text-4xl font-serif text-white tracking-tighter mb-2">
+             MAX<span className="text-sr-gold">SO</span>
+           </h1>
+           <p className="text-gray-400 text-xs tracking-[0.2em] uppercase">Member Access Portal</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-5">
+          {/* Email Input */}
+          <div className="group">
+            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-sr-gold transition-colors">Email Address</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Mail size={18} className="text-gray-600 group-focus-within:text-sr-gold transition-colors" />
+              </div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-black/40 border border-gray-800 text-white rounded-lg py-3 pl-10 pr-4 focus:border-sr-gold focus:ring-1 focus:ring-sr-gold outline-none transition-all placeholder-gray-600"
+                placeholder="enter@email.com"
+              />
+            </div>
           </div>
-        )}
 
-        <form onSubmit={handleLogin} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Email Address</label>
-            <input 
-              type="email" 
-              required
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-sairam-gold outline-none"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
+          {/* Password Input */}
+          <div className="group">
+            <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-sr-gold transition-colors">Password</label>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Lock size={18} className="text-gray-600 group-focus-within:text-sr-gold transition-colors" />
+              </div>
+              <input
+                type="password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-black/40 border border-gray-800 text-white rounded-lg py-3 pl-10 pr-4 focus:border-sr-gold focus:ring-1 focus:ring-sr-gold outline-none transition-all placeholder-gray-600"
+                placeholder="••••••••"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <input 
-              type="password" 
-              required
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-sairam-gold outline-none"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-
-          <button 
-            type="submit" 
+          {/* Submit Button */}
+          <button
+            type="submit"
             disabled={loading}
-            className="w-full bg-sairam-gold text-white font-bold py-3 rounded hover:bg-yellow-600 transition duration-300 disabled:opacity-50"
+            className="w-full bg-sr-gold text-black font-bold py-3 rounded-lg shadow-[0_0_15px_rgba(197,160,89,0.3)] hover:bg-white hover:text-black hover:shadow-[0_0_25px_rgba(255,255,255,0.4)] transition-all duration-300 flex items-center justify-center gap-2 mt-4"
           >
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? 'Accessing...' : (
+              <>
+                Enter Kingdom <ArrowRight size={18} />
+              </>
+            )}
           </button>
         </form>
+
+        <div className="mt-6 text-center">
+          <p className="text-gray-600 text-sm">
+            Don't have an account? <span className="text-sr-gold cursor-pointer hover:underline">Contact Admin</span>
+          </p>
+        </div>
       </div>
     </div>
   );

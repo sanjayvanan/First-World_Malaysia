@@ -6,11 +6,10 @@ const generateReferralCode = () => {
   return 'MAX-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 };
 
-// --- 1. REGISTER USER (Fully Optimized) ---
+// --- 1. REGISTER USER (Updated for Single Table) ---
 export const register = async (req, res) => {
   const { email, password, fullName, referredByCode } = req.body;
   
-  // 1. Get a dedicated client for the transaction
   const client = await pool.connect();
 
   try {
@@ -33,7 +32,7 @@ export const register = async (req, res) => {
       }
     }
 
-    // C. Create User
+    // C. Create User (No need to insert into referral_stats anymore)
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const newReferralCode = generateReferralCode();
@@ -46,12 +45,9 @@ export const register = async (req, res) => {
     );
     const newUser = newUserRes.rows[0];
 
-    // D. Initialize Stats
-    await client.query('INSERT INTO referral_stats (user_id) VALUES ($1)', [newUser.id]);
-
-    // E. OPTIMIZED TREE UPDATE (Single Query fetch, Batch Update)
+    // D. OPTIMIZED TREE UPDATE (Directly on 'users' table)
     if (referrerId) {
-      // 1. Fetch entire ancestor chain in ONE query (Recursive CTE)
+      // 1. Fetch ancestors
       const ancestorsRes = await client.query(`
         WITH RECURSIVE ancestor_tree AS (
           SELECT id, referred_by_id, 1 as generation
@@ -65,7 +61,7 @@ export const register = async (req, res) => {
         SELECT id, generation FROM ancestor_tree;
       `, [referrerId]);
 
-      // 2. Perform updates in parallel (much faster)
+      // 2. Update their stats in 'users' table
       for (const ancestor of ancestorsRes.rows) {
         let column = null;
         if (ancestor.generation === 1) column = 'direct_referrals_count';
@@ -73,8 +69,9 @@ export const register = async (req, res) => {
         else if (ancestor.generation === 3) column = 'level_2_count';
 
         if (column) {
+          // Changed table from 'referral_stats' to 'users'
           await client.query(
-            `UPDATE referral_stats SET ${column} = ${column} + 1 WHERE user_id = $1`,
+            `UPDATE users SET ${column} = ${column} + 1 WHERE id = $1`,
             [ancestor.id]
           );
         }
@@ -98,13 +95,18 @@ export const register = async (req, res) => {
   }
 };
 
-// --- 2. LOGIN USER (Simplified) ---
+// --- 2. LOGIN USER ---
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Optimization: No need for pool.connect() here. pool.query is faster for single selects.
-    const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    // Optimization: Select the new columns so the frontend has them immediately
+    const result = await pool.query(
+        `SELECT id, email, password_hash, role, full_name, referral_code, 
+                current_tier, direct_referrals_count, level_1_count, level_2_count 
+         FROM users WHERE email = $1`, 
+        [email]
+    );
 
     if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid credentials' });
 
@@ -117,7 +119,20 @@ export const login = async (req, res) => {
     res.json({ 
       message: 'Login successful',
       token, 
-      user: { id: user.id, email: user.email, role: user.role, fullName: user.full_name, referralCode: user.referral_code } 
+      user: { 
+        id: user.id, 
+        email: user.email, 
+        role: user.role, 
+        fullName: user.full_name, 
+        referralCode: user.referral_code,
+        // Send these back so the UI can update immediately
+        currentTier: user.current_tier, 
+        stats: {
+            directs: user.direct_referrals_count,
+            level1: user.level_1_count,
+            level2: user.level_2_count
+        }
+      } 
     });
 
   } catch (err) {
