@@ -33,7 +33,6 @@ const KycPage = () => {
   };
 
   return (
-    <DashboardLayout>
       <div className="max-w-2xl mx-auto">
         <h2 className="text-3xl font-bold text-white mb-6">Identity Verification</h2>
         
@@ -90,7 +89,6 @@ const KycPage = () => {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 };
 

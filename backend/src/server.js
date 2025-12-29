@@ -14,6 +14,7 @@ import adminRoutes from './modules/admin/admin.routes.js';
 import kycRoutes from './modules/kyc/kyc.routes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import rateLimit from 'express-rate-limit';
 
 
 dotenv.config();
@@ -23,6 +24,15 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+
+// --- ADD SECURITY LIMITER ---
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: { error: 'Too many login attempts, please try again later.' }
+});
+
 
 // --- 1. Global Middleware ---
 app.use(express.json());
@@ -44,7 +54,7 @@ app.use('/api/superuser', (req, res, next) => {
 
 
 // A. Auth Routes (Available to everyone)
-app.use('/api/auth', authRoutes); // <--- NEW: Enables /api/auth/register
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
