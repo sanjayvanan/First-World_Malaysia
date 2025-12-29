@@ -2,18 +2,36 @@ import { query } from '../../shared/db.js';
 import jwt from 'jsonwebtoken';
 
 
-// 1. GET ALL USERS (With Admin Info)
+// 1. GET ALL USERS (Paginated)
 export const getAllUsers = async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const offset = (page - 1) * limit;
+
   try {
-    // We LEFT JOIN to get the name of the assigned admin
+    // 1. Get total count
+    const countResult = await query('SELECT COUNT(*) FROM users');
+    const totalItems = parseInt(countResult.rows[0].count);
+
+    // 2. Fetch paginated data
     const result = await query(
       `SELECT u.id, u.email, u.full_name, u.role, u.kyc_status, u.created_at, u.referral_code, 
               u.assigned_admin_id, a.full_name as assigned_admin_name
        FROM users u
        LEFT JOIN users a ON u.assigned_admin_id = a.id
-       ORDER BY u.created_at DESC`
+       ORDER BY u.created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
     );
-    res.json(result.rows);
+    
+    res.json({
+        data: result.rows,
+        pagination: {
+            totalItems,
+            totalPages: Math.ceil(totalItems / limit),
+            currentPage: page
+        }
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });
@@ -23,9 +41,7 @@ export const getAllUsers = async (req, res) => {
 // 2. GET ALL ADMINS (For the dropdown list)
 export const getAllAdmins = async (req, res) => {
   try {
-    const result = await query(
-      "SELECT id, full_name FROM users WHERE role = 'ADMIN' OR role = 'SUPERUSER'"
-    );
+    const result = await query("SELECT id, full_name FROM users WHERE role = 'ADMIN' OR role = 'SUPERUSER'");
     res.json(result.rows);
   } catch (err) {
     console.error(err);
