@@ -10,6 +10,7 @@ import { query } from './shared/db.js';
 import authRoutes from './modules/auth/auth.routes.js'; 
 import referralRoutes from './modules/referrals/referral.routes.js';
 import superuserRoutes from './modules/superuser/superuser.routes.js';
+import adminRoutes from './modules/admin/admin.routes.js';
 import kycRoutes from './modules/kyc/kyc.routes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -48,12 +49,15 @@ app.use('/api/referrals', referralRoutes);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // B. Superuser Routes
+// ✅ ADD THIS INSTEAD
 app.use('/api/admin', (req, res, next) => {
-  if (req.isSuperuserDomain) {
-    return res.json({ message: "Welcome Superuser", domain: "Private" });
+  // 1. Security Check: Only allow access from Superuser domains
+  if (!req.isSuperuserDomain) {
+    return res.status(403).json({ error: "Access Denied: Wrong Domain" });
   }
-  res.status(403).json({ error: "Access Denied" });
-});
+  // 2. Pass control to the actual Admin Routes
+  next();
+}, adminRoutes);
 
 // C. Public Routes
 app.get('/', async (req, res) => {
