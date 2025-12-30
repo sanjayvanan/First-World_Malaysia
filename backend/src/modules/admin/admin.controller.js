@@ -1,17 +1,18 @@
 import { query } from '../../shared/db.js';
 
-// --- NEW: Get Stats for My Assigned Users ---
+// --- UPDATED: Get Stats for My Assigned Users ---
 export const getAdminStats = async (req, res) => {
   const adminId = req.user.id;
   try {
     const totalRes = await query('SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1', [adminId]);
-    const pendingRes = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1 AND kyc_status = 'PENDING'", [adminId]);
+    
+    // CHANGED: We now count 'SUBMITTED' (People waiting for you) instead of 'PENDING'
+    const submittedRes = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1 AND kyc_status = 'SUBMITTED'", [adminId]);
     const approvedRes = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1 AND kyc_status = 'APPROVED'", [adminId]);
     
-    // Optional: Calculate 'Action Required' or other metrics
     res.json({
       totalAssigned: parseInt(totalRes.rows[0].count),
-      pendingKYC: parseInt(pendingRes.rows[0].count),
+      submittedKYC: parseInt(submittedRes.rows[0].count), // <--- Send 'submitted' count
       approvedKYC: parseInt(approvedRes.rows[0].count)
     });
   } catch (err) {
@@ -20,46 +21,48 @@ export const getAdminStats = async (req, res) => {
   }
 };
 
+// --- UPDATED: Get Users with FILTER ---
 export const getMyAssignedUsers = async (req, res) => {
   const adminId = req.user.id; 
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const search = req.query.search || ''; 
+  const kycStatus = req.query.kycStatus || ''; // <--- Capture Filter
   const offset = (page - 1) * limit;
 
   try {
-    let countQuery = `SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1`;
-    let countParams = [adminId];
+    let whereClause = `WHERE u.assigned_admin_id = $1`;
+    let params = [adminId];
+    let paramIndex = 2;
 
-    let dataQuery = `
-      SELECT id, full_name, email, referral_code, kyc_status, created_at,
-             (SELECT full_name FROM users WHERE id = u.referred_by_id) as referred_by_name
-      FROM users u
-      WHERE u.assigned_admin_id = $1
-    `;
-    let dataParams = [adminId, limit, offset];
-
-    if (search) {
-      countQuery = `SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1 AND (full_name ILIKE $2 OR email ILIKE $2 OR referral_code ILIKE $2)`;
-      countParams = [adminId, `%${search}%`];
-
-      dataQuery = `
-        SELECT id, full_name, email, referral_code, kyc_status, created_at,
-               (SELECT full_name FROM users WHERE id = u.referred_by_id) as referred_by_name
-        FROM users u
-        WHERE u.assigned_admin_id = $1 
-        AND (full_name ILIKE $4 OR email ILIKE $4 OR referral_code ILIKE $4)
-        ORDER BY u.created_at DESC
-        LIMIT $2 OFFSET $3
-      `;
-      dataParams = [adminId, limit, offset, `%${search}%`];
-    } else {
-       dataQuery += ` ORDER BY u.created_at DESC LIMIT $2 OFFSET $3`;
+    // Apply Filter if selected
+    if (kycStatus && kycStatus !== 'ALL') {
+        whereClause += ` AND u.kyc_status = $${paramIndex}`;
+        params.push(kycStatus);
+        paramIndex++;
     }
 
-    const countResult = await query(countQuery, countParams);
+    // Apply Search
+    if (search) {
+        whereClause += ` AND (u.full_name ILIKE $${paramIndex} OR u.email ILIKE $${paramIndex} OR u.referral_code ILIKE $${paramIndex})`;
+        params.push(`%${search}%`);
+        paramIndex++;
+    }
+
+    const countQuery = `SELECT COUNT(*) FROM users u ${whereClause}`;
+    const countResult = await query(countQuery, params);
     const totalItems = parseInt(countResult.rows[0].count);
 
+    const dataQuery = `
+      SELECT u.id, u.full_name, u.email, u.referral_code, u.kyc_status, u.created_at,
+             (SELECT full_name FROM users WHERE id = u.referred_by_id) as referred_by_name
+      FROM users u
+      ${whereClause}
+      ORDER BY u.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `;
+    
+    const dataParams = [...params, limit, offset];
     const result = await query(dataQuery, dataParams);
 
     res.json({

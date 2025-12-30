@@ -14,10 +14,16 @@ export const pool = new Pool({
   ssl: isProduction ? { rejectUnauthorized: false } : false 
 });
 
+// --- CRITICAL FIX: Handle idle client errors to prevent crash ---
+pool.on('error', (err, client) => {
+  console.error('Unexpected error on idle client', err);
+  // Do not exit the process; the pool will handle reconnection
+});
+
 // 2. Test connection on startup
 pool.connect()
   .then(() => console.log(`DB Connected (SSL: ${isProduction ? 'Enabled' : 'Disabled'})`))
   .catch(err => console.error('DB Connection Error:', err));
 
-// 3. Export the query helper (for cleaner code in new controllers)
+// 3. Export the query helper
 export const query = (text, params) => pool.query(text, params);

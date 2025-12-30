@@ -3,6 +3,7 @@ import cors from 'cors'; // <--- FIX: MUST BE 'cors', NOT 'express'
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import morgan from 'morgan';
 
 // Routes
 import authRoutes from './modules/auth/auth.routes.js';
@@ -49,6 +50,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 
 // Routes

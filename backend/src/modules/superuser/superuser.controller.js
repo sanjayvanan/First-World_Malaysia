@@ -91,19 +91,23 @@ export const assignUserToAdmin = async (req, res) => {
   }
 };
 
-// --- 4. DASHBOARD OVERVIEW ---
+// --- 4. DASHBOARD OVERVIEW (UPDATED) ---
 export const getSystemStats = async (req, res) => {
   try {
     const userCount = await query('SELECT COUNT(*) FROM users');
     const referralCount = await query('SELECT COUNT(*) FROM users WHERE referred_by_id IS NOT NULL');
-    const pendingKycCount = await query("SELECT COUNT(*) FROM users WHERE kyc_status = 'SUBMITTED' OR kyc_status = 'PENDING'");
+    const pendingKycCount = await query("SELECT COUNT(*) FROM users WHERE kyc_status = 'SUBMITTED'");
     const approvedKycCount = await query("SELECT COUNT(*) FROM users WHERE kyc_status = 'APPROVED'");
+    
+    // NEW: Count users assigned to Admin
+    const assignedCount = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id IS NOT NULL");
 
     res.json({
       totalUsers: parseInt(userCount.rows[0].count),
       totalReferrals: parseInt(referralCount.rows[0].count),
       pendingKYC: parseInt(pendingKycCount.rows[0].count),
-      approvedKYC: parseInt(approvedKycCount.rows[0].count)
+      approvedKYC: parseInt(approvedKycCount.rows[0].count),
+      assignedUsers: parseInt(assignedCount.rows[0].count) // <--- SEND TO FRONTEND
     });
   } catch (err) {
     console.error("Stats Error:", err);

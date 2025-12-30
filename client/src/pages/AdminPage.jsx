@@ -1,14 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import api from '../api/axios'; // <--- IMPORT OUR NEW FILE
+import api from '../api/axios'; 
 import { useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, LogOut, Search, Calendar, Mail, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Users, LogOut, Search, Calendar, Mail, CheckCircle, Clock, FileText } from 'lucide-react';
 
 const AdminPage = () => {
-  const [stats, setStats] = useState({ totalAssigned: 0, pendingKYC: 0, approvedKYC: 0 });
+  // 1. UPDATED STATE to match new backend response
+  const [stats, setStats] = useState({ totalAssigned: 0, submittedKYC: 0, approvedKYC: 0 });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // 2. ADDED FILTER STATE
+  const [kycFilter, setKycFilter] = useState('ALL'); 
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -19,16 +23,20 @@ const AdminPage = () => {
 
   useEffect(() => {
     fetchData();
-  }, [page, search]);
+  }, [page, search, kycFilter]); // <--- Refetch when filter changes
 
   const fetchData = async () => {
     try {
       setLoading(true);
       
-      // <--- CHANGED: Using 'api.get' with relative paths
+      // 3. CONSTRUCT QUERY with Filter
+      let query = `?page=${page}&limit=10`;
+      if (search) query += `&search=${search}`;
+      if (kycFilter !== 'ALL') query += `&kycStatus=${kycFilter}`;
+
       const [statsRes, usersRes] = await Promise.all([
         api.get('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
-        api.get(`/api/admin/my-users?page=${page}&limit=10&search=${search}`, {
+        api.get(`/api/admin/my-users${query}`, {
             headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -52,9 +60,12 @@ const AdminPage = () => {
     navigate('/login');
   };
 
-  // ... (StatCard Component remains unchanged) ...
-  const StatCard = ({ title, value, icon: Icon, colorClass }) => (
-    <div className="bg-sr-panel border border-sr-gold/20 p-6 rounded-xl shadow-lg flex items-center justify-between relative overflow-hidden group">
+  // 4. UPDATED STAT CARD (Added onClick & Active State)
+  const StatCard = ({ title, value, icon: Icon, colorClass, filterType }) => (
+    <div 
+      onClick={() => { setKycFilter(filterType); setPage(1); }}
+      className={`bg-sr-panel border ${kycFilter === filterType ? 'border-sr-gold' : 'border-sr-gold/20'} p-6 rounded-xl shadow-lg flex items-center justify-between relative overflow-hidden group cursor-pointer transition-all hover:bg-white/5`}
+    >
         <div className="absolute top-0 right-0 w-20 h-20 bg-sr-gold/5 rounded-full -mr-6 -mt-6 transition-transform group-hover:scale-110"></div>
         <div>
             <h3 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-2">{title}</h3>
@@ -80,11 +91,7 @@ const AdminPage = () => {
               </h1>
             </div>
             <div className="flex items-center space-x-6">
-              <div className="hidden md:block text-xs text-sr-gold uppercase tracking-widest">Assigned Access</div>
-              <button 
-                onClick={handleLogout}
-                className="flex items-center gap-2 bg-red-900/20 hover:bg-red-900/40 text-red-200 px-4 py-2 rounded-lg text-sm transition-all border border-red-500/20"
-              >
+              <button onClick={handleLogout} className="flex items-center gap-2 bg-red-900/20 hover:bg-red-900/40 text-red-200 px-4 py-2 rounded-lg text-sm transition-all border border-red-500/20">
                 <LogOut size={16} /> Logout
               </button>
             </div>
@@ -93,18 +100,42 @@ const AdminPage = () => {
       </nav>
 
       <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        
+        {/* 5. UPDATED CARDS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <StatCard title="My Clients" value={stats.totalAssigned} icon={Users} colorClass="text-blue-400" />
-            <StatCard title="Pending KYC" value={stats.pendingKYC} icon={Clock} colorClass="text-orange-400" />
-            <StatCard title="Verified" value={stats.approvedKYC} icon={CheckCircle} colorClass="text-green-400" />
+            <StatCard 
+                title="All Clients" 
+                value={stats.totalAssigned} 
+                icon={Users} 
+                colorClass="text-blue-400" 
+                filterType="ALL"
+            />
+            {/* Shows 'SUBMITTED' Count, Filters for 'SUBMITTED' */}
+            <StatCard 
+                title="Needs Review" 
+                value={stats.submittedKYC} 
+                icon={FileText} 
+                colorClass="text-orange-400" 
+                filterType="SUBMITTED"
+            />
+            <StatCard 
+                title="Verified" 
+                value={stats.approvedKYC} 
+                icon={CheckCircle} 
+                colorClass="text-green-400" 
+                filterType="APPROVED"
+            />
         </div>
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div>
-                <h2 className="text-2xl font-bold text-white mb-1">Detailed List</h2>
-                <p className="text-sm text-gray-400">Manage your specific assignments below.</p>
+            <div className="flex items-center gap-4">
+                <h2 className="text-2xl font-bold text-white">Client List</h2>
+                {kycFilter !== 'ALL' && (
+                    <span className="px-3 py-1 bg-sr-gold text-black text-xs font-bold rounded-full uppercase">
+                        Showing: {kycFilter}
+                    </span>
+                )}
             </div>
-            
             <div className="relative w-full md:w-auto">
                 <input 
                     type="text" 
@@ -130,9 +161,9 @@ const AdminPage = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-700/50">
                     {loading ? (
-                        <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500">Loading your clients...</td></tr>
+                        <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500">Loading...</td></tr>
                     ) : users.length === 0 ? (
-                        <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500">No users assigned to you yet.</td></tr>
+                        <tr><td colSpan="4" className="px-6 py-12 text-center text-gray-500">No {kycFilter === 'ALL' ? '' : kycFilter.toLowerCase()} clients found.</td></tr>
                     ) : (
                         users.map((user) => (
                         <tr key={user.id} className="hover:bg-white/5 transition-colors">
@@ -158,6 +189,7 @@ const AdminPage = () => {
                             <td className="px-6 py-4 whitespace-nowrap">
                                 <span className={`flex items-center w-fit gap-1 px-2 py-1 text-[10px] uppercase tracking-wide font-bold rounded-full border ${
                                     user.kyc_status === 'APPROVED' ? 'bg-green-900/20 text-green-400 border-green-500/30' : 
+                                    user.kyc_status === 'SUBMITTED' ? 'bg-blue-900/20 text-blue-400 border-blue-500/30' :
                                     user.kyc_status === 'PENDING' ? 'bg-orange-900/20 text-orange-400 border-orange-500/30' : 'bg-gray-800 text-gray-400 border-gray-600'
                                 }`}>
                                     {user.kyc_status === 'APPROVED' ? <CheckCircle size={10}/> : <Clock size={10}/>}
@@ -165,13 +197,7 @@ const AdminPage = () => {
                                 </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                                {user.referred_by_name ? (
-                                    <span className="text-white bg-black/40 px-2 py-1 rounded border border-gray-700">
-                                        {user.referred_by_name}
-                                    </span>
-                                ) : (
-                                    <span className="opacity-50">-</span>
-                                )}
+                                {user.referred_by_name || <span className="opacity-50">-</span>}
                             </td>
                         </tr>
                         ))
@@ -181,21 +207,9 @@ const AdminPage = () => {
             </div>
             
             <div className="bg-black/20 px-4 py-3 flex items-center justify-between border-t border-sr-gold/10 sm:px-6">
-                <button 
-                    onClick={() => setPage(p => Math.max(1, p - 1))} 
-                    disabled={page === 1} 
-                    className="text-xs font-bold text-sr-gold hover:text-white disabled:opacity-30 uppercase tracking-wider"
-                >
-                    Previous
-                </button>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="text-xs font-bold text-sr-gold disabled:opacity-30">Previous</button>
                 <span className="text-xs text-gray-500">Page {page} of {totalPages}</span>
-                <button 
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))} 
-                    disabled={page === totalPages} 
-                    className="text-xs font-bold text-sr-gold hover:text-white disabled:opacity-30 uppercase tracking-wider"
-                >
-                    Next
-                </button>
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="text-xs font-bold text-sr-gold disabled:opacity-30">Next</button>
             </div>
         </div>
       </main>
