@@ -7,19 +7,13 @@ export default {
   theme: {
     extend: {
       colors: {
-        sr: {
-          blue: '#041E42',      // Deep Royal Blue
-          panel: '#0B254A',     // Panel Background
-          gold: '#C5A059',      // The Gold
-          green: '#2ECC71',     // Money Green
-          silver: '#BDC3C7',    // Silver Badge
-        }
+        'sr-blue': '#0B1120',  // Deep Luxury Blue/Black
+        'sr-panel': '#151E32', // Slightly lighter panel color
+        'sr-gold': '#C5A059',  // The Gold accent
+        'sr-gold-light': '#E5C079',
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-      },
-      backgroundImage: {
-        'blue-gradient': 'linear-gradient(180deg, #041E42 0%, #000000 100%)',
+        sans: ['Inter', 'sans-serif'], // Ensure you have a clean font
       }
     },
   },

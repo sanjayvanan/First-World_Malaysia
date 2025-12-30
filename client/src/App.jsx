@@ -1,57 +1,75 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-
-// Pages
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
+import AdminPage from './pages/AdminPage';
+import DashboardLayout from './components/DashboardLayout';
+import PlansPage from './pages/PlansPage';
 import NetworkPage from './pages/NetworkPage';
 import KycPage from './pages/KycPage';
-import AdminPage from './pages/AdminPage'; 
-import PlansPage from './pages/PlansPage'; // <--- IMPORT THE NEW PAGE
+import NotFoundPage from './pages/NotFoundPage'; // <--- Import the new page
 
-// Layouts
-import DashboardLayout from './components/DashboardLayout';
+// Helper: Protects routes and ensures Role separation
+const ProtectedRoute = ({ children, allowedRoles }) => {
+  const { user, token } = useSelector((state) => state.auth);
 
-// Placeholder Pages for remaining broken links
-const DonatePage = () => <div className="text-white text-xl p-10">Donate Page Coming Soon</div>;
-const SettingsPage = () => <div className="text-white text-xl p-10">Settings Page Coming Soon</div>;
-const HelpPage = () => <div className="text-white text-xl p-10">Help Page Coming Soon</div>;
+  if (!token || !user) {
+    return <Navigate to="/login" replace />;
+  }
 
-const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem('token');
-  return token ? children : <Navigate to="/login" replace />;
+  // If user has the wrong role, redirect them to their correct home
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    if (user.role === 'ADMIN') return <Navigate to="/admin" replace />;
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
 };
 
 function App() {
   return (
-    <BrowserRouter>
+    <Router>
       <Routes>
+        {/* Public Route */}
         <Route path="/login" element={<LoginPage />} />
-        
-        {/* LAYOUT ROUTE: Parent for all dashboard pages */}
-        <Route path="/dashboard" element={
-          <PrivateRoute>
-            <DashboardLayout />
-          </PrivateRoute>
-        }>
-            <Route index element={<DashboardPage />} />
-            <Route path="network" element={<NetworkPage />} />
-            <Route path="donate" element={<DonatePage />} />
-            <Route path="plans" element={<PlansPage />} /> {/* <--- CONNECTED HERE */}
-            <Route path="kyc" element={<KycPage />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="help" element={<HelpPage />} />
+
+        {/* --- ADMIN ROUTE --- */}
+        <Route 
+          path="/admin" 
+          element={
+            <ProtectedRoute allowedRoles={['ADMIN']}>
+              <AdminPage />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* --- USER ROUTES --- */}
+        <Route 
+          path="/dashboard" 
+          element={
+            <ProtectedRoute allowedRoles={['USER']}>
+              <DashboardLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="plans" element={<PlansPage />} />
+          <Route path="network" element={<NetworkPage />} />
+          <Route path="kyc" element={<KycPage />} />
+          {/* Catch 404s INSIDE the dashboard layout (optional) */}
+          <Route path="*" element={<NotFoundPage />} /> 
         </Route>
 
-        <Route path="/admin" element={
-          <PrivateRoute>
-            <AdminPage />
-          </PrivateRoute>
-        } />
+        {/* Root Redirect */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* --- GLOBAL CATCH-ALL (Fixes the issue) --- */}
+        {/* OLD: <Route path="*" element={<Navigate to="/login" replace />} /> */}
+        {/* NEW: Shows 404 page instead of logging out */}
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 }
 

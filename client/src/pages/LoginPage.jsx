@@ -17,8 +17,24 @@ const LoginPage = () => {
     setLoading(true);
     try {
       const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
-      dispatch(setCredentials({ user: res.data.user, token: res.data.token }));
-      navigate('/dashboard');
+      
+      const user = res.data.user;
+      const token = res.data.token;
+
+      // 1. Save to Redux
+      dispatch(setCredentials({ user, token }));
+
+      // 2. Save to LocalStorage (Essential for App.jsx checks)
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(user));
+
+      // 3. CONDITIONAL REDIRECT
+      if (user.role === 'ADMIN') {
+        navigate('/admin'); // <--- Manager Portal
+      } else {
+        navigate('/dashboard'); // <--- User Dashboard
+      }
+
     } catch (err) {
       console.error(err);
       alert('Login Failed: ' + (err.response?.data?.error || 'Unknown error'));
@@ -104,4 +120,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default LoginPage; 
