@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/axios'; // <--- IMPORT YOUR NEW FILE
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, UserCheck, Activity, Search, LogOut, CheckCircle, Clock } from 'lucide-react';
+import { Shield, Users, UserCheck, Activity, Search, LogOut, CheckCircle, Clock, Link } from 'lucide-react';
 
 const DashboardPage = () => {
   const navigate = useNavigate();
   
-  const [stats, setStats] = useState({ totalUsers: 0, totalReferrals: 0, pendingKYC: 0, approvedKYC: 0 });
+  const [stats, setStats] = useState({ totalUsers: 0, totalReferrals: 0, pendingKYC: 0, approvedKYC: 0, assignedUsers: 0 });
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,9 +31,10 @@ const DashboardPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
+      // <--- CHANGED: Use 'api' and relative paths
       const [statsRes, usersRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/superuser/stats', config),
-        axios.get(`http://localhost:5000/api/superuser/users?page=${page}&limit=10&search=${searchTerm}`, config)
+        api.get('/api/superuser/stats', config),
+        api.get(`/api/superuser/users?page=${page}&limit=10&search=${searchTerm}`, config)
       ]);
 
       setStats(statsRes.data);
@@ -53,8 +54,10 @@ const DashboardPage = () => {
     setActionLoading(userId);
     try {
       const newStatus = !currentStatus;
-      await axios.post('http://localhost:5000/api/superuser/assign', { userId, assign: newStatus }, config);
+      // <--- CHANGED: Use 'api'
+      await api.post('/api/superuser/assign', { userId, assign: newStatus }, config);
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_shown_to_admin: newStatus } : u));
+      fetchData(); // Refresh counts
     } catch (err) {
       alert("Failed to update visibility");
     } finally {
@@ -111,8 +114,9 @@ const DashboardPage = () => {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
           <StatCard title="Total Users" value={stats.totalUsers} icon={Users} color="text-blue-400" />
+          <StatCard title="Assigned to Admin" value={stats.assignedUsers} icon={Link} color="text-indigo-400" />
           <StatCard title="Referrals" value={stats.totalReferrals} icon={Activity} color="text-purple-400" />
           <StatCard title="Pending KYC" value={stats.pendingKYC} icon={Clock} color="text-orange-400" />
           <StatCard title="Verified" value={stats.approvedKYC} icon={CheckCircle} color="text-green-400" />
@@ -170,7 +174,7 @@ const DashboardPage = () => {
                         </div>
                       </td>
                       
-                      {/* --- MODIFIED: STATIC ROLE BADGE (NO EDITING) --- */}
+                      {/* --- STATIC ROLE BADGE --- */}
                       <td className="px-6 py-4 whitespace-nowrap">
                          <span className={`text-xs font-bold px-3 py-1 rounded border border-gray-600 ${
                              user.role === 'ADMIN' 

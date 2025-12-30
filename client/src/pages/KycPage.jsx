@@ -12,7 +12,6 @@ const KycPage = () => {
     const fetchStatus = async () => {
       try {
         const token = localStorage.getItem('token');
-        // <--- CHANGED: No more 'http://localhost:5000'
         const res = await api.get('/api/kyc/status', {
           headers: { 'Authorization': `Bearer ${token}` }
         });

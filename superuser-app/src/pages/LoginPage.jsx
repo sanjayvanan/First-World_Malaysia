@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios'; // <--- IMPORT YOUR NEW FILE
 import { useNavigate } from 'react-router-dom';
 import { Shield, Lock, ChevronRight, AlertCircle } from 'lucide-react';
 
@@ -16,7 +16,8 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', { 
+      // <--- CHANGED: No more 'http://localhost:5000'
+      const res = await api.post('/api/auth/login', { 
         email, 
         password 
       });
