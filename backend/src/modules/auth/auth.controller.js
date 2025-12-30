@@ -6,10 +6,15 @@ const generateReferralCode = () => {
   return 'MAX-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 };
 
-// --- 1. REGISTER USER (Updated for Single Table) ---
+// --- 1. REGISTER USER (Updated with Trim & Lowercase) ---
 export const register = async (req, res) => {
-  const { email, password, fullName, referredByCode } = req.body;
+  let { email, password, fullName, referredByCode } = req.body;
   
+  // --- FIX: Clean Inputs ---
+  if (email) email = email.trim().toLowerCase();
+  if (fullName) fullName = fullName.trim();
+  if (referredByCode) referredByCode = referredByCode.trim().toUpperCase(); // Codes are usually uppercase
+
   const client = await pool.connect();
 
   try {
@@ -32,7 +37,7 @@ export const register = async (req, res) => {
       }
     }
 
-    // C. Create User (No need to insert into referral_stats anymore)
+    // C. Create User
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     const newReferralCode = generateReferralCode();
@@ -45,9 +50,8 @@ export const register = async (req, res) => {
     );
     const newUser = newUserRes.rows[0];
 
-    // D. OPTIMIZED TREE UPDATE (Directly on 'users' table)
+    // D. OPTIMIZED TREE UPDATE
     if (referrerId) {
-      // 1. Fetch ancestors
       const ancestorsRes = await client.query(`
         WITH RECURSIVE ancestor_tree AS (
           SELECT id, referred_by_id, 1 as generation
@@ -61,7 +65,6 @@ export const register = async (req, res) => {
         SELECT id, generation FROM ancestor_tree;
       `, [referrerId]);
 
-      // 2. Update their stats in 'users' table
       for (const ancestor of ancestorsRes.rows) {
         let column = null;
         if (ancestor.generation === 1) column = 'direct_referrals_count';
@@ -69,7 +72,6 @@ export const register = async (req, res) => {
         else if (ancestor.generation === 3) column = 'level_2_count';
 
         if (column) {
-          // Changed table from 'referral_stats' to 'users'
           await client.query(
             `UPDATE users SET ${column} = ${column} + 1 WHERE id = $1`,
             [ancestor.id]
@@ -95,12 +97,14 @@ export const register = async (req, res) => {
   }
 };
 
-// --- 2. LOGIN USER ---
+// --- 2. LOGIN USER (Updated with Trim & Lowercase) ---
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  let { email, password } = req.body;
+
+  // --- FIX: Clean Inputs ---
+  if (email) email = email.trim().toLowerCase();
 
   try {
-    // Optimization: Select the new columns so the frontend has them immediately
     const result = await pool.query(
         `SELECT id, email, password_hash, role, full_name, referral_code, 
                 current_tier, direct_referrals_count, level_1_count, level_2_count 
@@ -125,7 +129,6 @@ export const login = async (req, res) => {
         role: user.role, 
         fullName: user.full_name, 
         referralCode: user.referral_code,
-        // Send these back so the UI can update immediately
         currentTier: user.current_tier, 
         stats: {
             directs: user.direct_referrals_count,
