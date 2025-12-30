@@ -1,36 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, CheckCircle, AlertCircle, Shield, FileText } from 'lucide-react';
-import axios from 'axios';
+import api from '../api/axios'; // <--- IMPORT OUR NEW FILE
 
 const KycPage = () => {
   const [fileFront, setFileFront] = useState(null);
   const [fileBack, setFileBack] = useState(null);
-  
-  // Statuses: 'PENDING' (Default/Null), 'SUBMITTED', 'APPROVED', 'REJECTED'
   const [status, setStatus] = useState('LOADING'); 
   const [loading, setLoading] = useState(false);
 
-  // --- 1. FETCH STATUS ON LOAD ---
   useEffect(() => {
     const fetchStatus = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/kyc/status', {
+        // <--- CHANGED: No more 'http://localhost:5000'
+        const res = await api.get('/api/kyc/status', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
-        // If the DB says null, we treat it as 'PENDING' (Show Form)
-        // If DB says 'APPROVED', we show Verified screen
         setStatus(res.data.status || 'PENDING');
       } catch (err) {
         console.error("Failed to fetch KYC status", err);
-        setStatus('PENDING'); // Default to showing form on error
+        setStatus('PENDING'); 
       }
     };
     fetchStatus();
   }, []);
 
-  // --- HANDLE SUBMISSION ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!fileFront || !fileBack) return alert("Please upload both front and back of your ID.");
@@ -42,13 +36,14 @@ const KycPage = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:5000/api/kyc/submit', formData, {
+      // <--- CHANGED: No more 'http://localhost:5000'
+      await api.post('/api/kyc/submit', formData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-      setStatus('SUBMITTED'); // Update UI immediately
+      setStatus('SUBMITTED'); 
     } catch (err) {
       console.error(err);
       alert("Upload failed. Please try again.");
@@ -57,7 +52,7 @@ const KycPage = () => {
     }
   };
 
-  // Helper Component
+  // ... (FileUploadBox Helper remains unchanged) ...
   const FileUploadBox = ({ label, file, setFile }) => (
     <div className="space-y-2">
       <label className="text-sm font-bold text-gray-300 uppercase tracking-wider">{label}</label>
@@ -93,7 +88,6 @@ const KycPage = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
-      {/* Header */}
       <div className="text-center space-y-4">
         <div className="w-16 h-16 bg-sr-gold/10 rounded-full flex items-center justify-center mx-auto border border-sr-gold/30 shadow-[0_0_15px_rgba(197,160,89,0.2)]">
           <Shield className="text-sr-gold" size={32} />
@@ -102,10 +96,8 @@ const KycPage = () => {
         <p className="text-gray-400">Complete your KYC to unlock full withdrawal limits.</p>
       </div>
 
-      {/* Status Card */}
       <div className="bg-sr-panel border border-sr-gold/20 rounded-xl p-6 relative overflow-hidden">
         <div className="flex items-center gap-4 relative z-10">
-          {/* Changed 'VERIFIED' to 'APPROVED' to match backend */}
           {status === 'APPROVED' ? (
             <CheckCircle className="text-green-500" size={28} />
           ) : status === 'SUBMITTED' ? (
@@ -132,7 +124,6 @@ const KycPage = () => {
         </div>
       </div>
 
-      {/* Upload Form - Show if PENDING or REJECTED */}
       {(status === 'PENDING' || status === 'REJECTED') && (
         <form onSubmit={handleSubmit} className="bg-sr-panel border border-sr-gold/20 rounded-xl p-8 space-y-8 shadow-xl">
           

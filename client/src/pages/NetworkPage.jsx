@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios'; // <--- IMPORT OUR NEW FILE
 
 const NetworkPage = () => {
   const [stats, setStats] = useState(null);
@@ -9,7 +9,8 @@ const NetworkPage = () => {
     const fetchStats = async () => {
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/referrals/stats', {
+            // <--- CHANGED: No more 'http://localhost:5000'
+            const res = await api.get('/api/referrals/stats', {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setStats(res.data);

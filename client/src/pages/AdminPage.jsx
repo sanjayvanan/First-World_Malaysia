@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../api/axios'; // <--- IMPORT OUR NEW FILE
 import { useDispatch } from 'react-redux';
 import { logout } from '../redux/slices/authSlice';
 import { useNavigate } from 'react-router-dom';
-import { Shield, Users, LogOut, Search, Calendar, Mail, CheckCircle, Clock, Activity, AlertCircle } from 'lucide-react';
+import { Shield, Users, LogOut, Search, Calendar, Mail, CheckCircle, Clock } from 'lucide-react';
 
 const AdminPage = () => {
   const [stats, setStats] = useState({ totalAssigned: 0, pendingKYC: 0, approvedKYC: 0 });
@@ -25,10 +25,10 @@ const AdminPage = () => {
     try {
       setLoading(true);
       
-      // Fetch Stats and Users in parallel
+      // <--- CHANGED: Using 'api.get' with relative paths
       const [statsRes, usersRes] = await Promise.all([
-        axios.get('http://localhost:5000/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`http://localhost:5000/api/admin/my-users?page=${page}&limit=10&search=${search}`, {
+        api.get('/api/admin/stats', { headers: { Authorization: `Bearer ${token}` } }),
+        api.get(`/api/admin/my-users?page=${page}&limit=10&search=${search}`, {
             headers: { Authorization: `Bearer ${token}` }
         })
       ]);
@@ -52,7 +52,7 @@ const AdminPage = () => {
     navigate('/login');
   };
 
-  // --- COMPONENT: Stat Card ---
+  // ... (StatCard Component remains unchanged) ...
   const StatCard = ({ title, value, icon: Icon, colorClass }) => (
     <div className="bg-sr-panel border border-sr-gold/20 p-6 rounded-xl shadow-lg flex items-center justify-between relative overflow-hidden group">
         <div className="absolute top-0 right-0 w-20 h-20 bg-sr-gold/5 rounded-full -mr-6 -mt-6 transition-transform group-hover:scale-110"></div>
@@ -68,8 +68,6 @@ const AdminPage = () => {
 
   return (
     <div className="min-h-screen bg-sr-blue font-sans text-gray-200">
-      
-      {/* --- ADMIN NAVBAR --- */}
       <nav className="bg-sr-panel border-b border-sr-gold/20 sticky top-0 z-20 shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
@@ -94,32 +92,13 @@ const AdminPage = () => {
         </div>
       </nav>
 
-      {/* --- CONTENT AREA --- */}
       <main className="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        
-        {/* STATS GRID */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-            <StatCard 
-                title="My Clients" 
-                value={stats.totalAssigned} 
-                icon={Users} 
-                colorClass="text-blue-400" 
-            />
-            <StatCard 
-                title="Pending KYC" 
-                value={stats.pendingKYC} 
-                icon={Clock} 
-                colorClass="text-orange-400" 
-            />
-            <StatCard 
-                title="Verified" 
-                value={stats.approvedKYC} 
-                icon={CheckCircle} 
-                colorClass="text-green-400" 
-            />
+            <StatCard title="My Clients" value={stats.totalAssigned} icon={Users} colorClass="text-blue-400" />
+            <StatCard title="Pending KYC" value={stats.pendingKYC} icon={Clock} colorClass="text-orange-400" />
+            <StatCard title="Verified" value={stats.approvedKYC} icon={CheckCircle} colorClass="text-green-400" />
         </div>
 
-        {/* SEARCH & HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
             <div>
                 <h2 className="text-2xl font-bold text-white mb-1">Detailed List</h2>
@@ -138,7 +117,6 @@ const AdminPage = () => {
             </div>
         </div>
 
-        {/* DATA TABLE */}
         <div className="bg-sr-panel border border-sr-gold/20 rounded-xl shadow-2xl overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-700/50">
@@ -202,7 +180,6 @@ const AdminPage = () => {
                 </table>
             </div>
             
-            {/* PAGINATION */}
             <div className="bg-black/20 px-4 py-3 flex items-center justify-between border-t border-sr-gold/10 sm:px-6">
                 <button 
                     onClick={() => setPage(p => Math.max(1, p - 1))} 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../redux/slices/authSlice';
-import axios from 'axios';
+import api from '../api/axios'; // <--- IMPORT OUR NEW FILE
 import { Lock, Mail, ArrowRight } from 'lucide-react';
 
 const LoginPage = () => {
@@ -16,23 +16,20 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      // <--- CHANGED: No more 'http://localhost:5000'
+      const res = await api.post('/api/auth/login', { email, password });
       
       const user = res.data.user;
       const token = res.data.token;
 
-      // 1. Save to Redux
       dispatch(setCredentials({ user, token }));
-
-      // 2. Save to LocalStorage (Essential for App.jsx checks)
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
-      // 3. CONDITIONAL REDIRECT
       if (user.role === 'ADMIN') {
-        navigate('/admin'); // <--- Manager Portal
+        navigate('/admin'); 
       } else {
-        navigate('/dashboard'); // <--- User Dashboard
+        navigate('/dashboard'); 
       }
 
     } catch (err) {
@@ -45,13 +42,10 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Ambient Background Effects */}
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-sr-gold/10 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-sr-green/10 rounded-full blur-[100px] pointer-events-none" />
 
       <div className="w-full max-w-md bg-sr-panel border border-sr-gold/20 rounded-2xl p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] relative z-10 backdrop-blur-sm">
-        
-        {/* Logo / Header */}
         <div className="text-center mb-8">
            <h1 className="text-4xl font-serif text-white tracking-tighter mb-2">
              MAX<span className="text-sr-gold">SO</span>
@@ -60,7 +54,6 @@ const LoginPage = () => {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-5">
-          {/* Email Input */}
           <div className="group">
             <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-sr-gold transition-colors">Email Address</label>
             <div className="relative">
@@ -78,7 +71,6 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Password Input */}
           <div className="group">
             <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-sr-gold transition-colors">Password</label>
             <div className="relative">
@@ -96,7 +88,6 @@ const LoginPage = () => {
             </div>
           </div>
 
-          {/* Submit Button */}
           <button
             type="submit"
             disabled={loading}
@@ -120,4 +111,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;
