@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../api/axios'; // <--- IMPORT YOUR NEW FILE
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { Shield, Users, UserCheck, Activity, Search, LogOut, CheckCircle, Clock, Link } from 'lucide-react';
 
@@ -31,7 +31,6 @@ const DashboardPage = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // <--- CHANGED: Use 'api' and relative paths
       const [statsRes, usersRes] = await Promise.all([
         api.get('/api/superuser/stats', config),
         api.get(`/api/superuser/users?page=${page}&limit=10&search=${searchTerm}`, config)
@@ -54,11 +53,19 @@ const DashboardPage = () => {
     setActionLoading(userId);
     try {
       const newStatus = !currentStatus;
-      // <--- CHANGED: Use 'api'
       await api.post('/api/superuser/assign', { userId, assign: newStatus }, config);
+      
+      // Update the user list locally
       setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_shown_to_admin: newStatus } : u));
-      fetchData(); // Refresh counts
+      
+      // Update the stats count locally (Optimistic UI) instead of refetching
+      setStats(prev => ({
+        ...prev,
+        assignedUsers: newStatus ? prev.assignedUsers + 1 : prev.assignedUsers - 1
+      }));
+      
     } catch (err) {
+      console.error(err);
       alert("Failed to update visibility");
     } finally {
       setActionLoading(null);

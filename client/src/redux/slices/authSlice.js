@@ -1,48 +1,63 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+import api from '../../api/axios'; // <--- CHANGED: Import your configured API
 
-// 1. ASYNC ACTION: Login User (Optional - if you prefer Thunks)
+// 1. ASYNC ACTION: Login User
 export const loginUser = createAsyncThunk(
   'auth/login',
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', { email, password });
+      // <--- CHANGED: Use 'api' and relative path. 
+      // This automatically prepends the correct BASE_URL (localhost or production domain)
+      const response = await api.post('/api/auth/login', { email, password });
       
-      // Save to LocalStorage (so it survives refresh)
+      // Save to LocalStorage (Essential for persistence)
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
       
-      return response.data; // { token, user, message }
+      return response.data; 
     } catch (err) {
-      return rejectWithValue(err.response?.data?.error || 'Login failed');
+      // Standardize error message capture
+      return rejectWithValue(err.response?.data?.message || err.response?.data?.error || 'Login failed');
     }
   }
 );
 
-// 2. INITIAL STATE (Load from LocalStorage on refresh)
-const token = localStorage.getItem('token');
-const user = JSON.parse(localStorage.getItem('user') || 'null'); // Fixed JSON.parse null safety
-
-const initialState = {
-  user: user || null,
-  token: token || null,
-  loading: false,
-  error: null,
-  isAuthenticated: !!token,
+// 2. INITIAL STATE 
+// Safely load from LocalStorage so the user stays logged in on refresh
+const loadState = () => {
+  try {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('user');
+    if (token && user) {
+        return {
+            token,
+            user: JSON.parse(user),
+            isAuthenticated: true,
+            loading: false,
+            error: null
+        };
+    }
+  } catch (e) {
+    console.error("Failed to load auth state:", e);
+  }
+  return {
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    loading: false,
+    error: null,
+  };
 };
 
-// 3. SLICE (The Reducer Logic)
 const authSlice = createSlice({
   name: 'auth',
-  initialState,
+  initialState: loadState(),
   reducers: {
-    // --- THIS IS THE MISSING REDUCER ---
     setCredentials: (state, action) => {
         const { user, token } = action.payload;
         state.user = user;
         state.token = token;
         state.isAuthenticated = true;
-        // Sync with local storage
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
     },
@@ -54,7 +69,6 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       state.error = null;
     },
-    // Update user data locally (e.g. after KYC upload or Profile edit)
     updateUser: (state, action) => {
         state.user = { ...state.user, ...action.payload };
         localStorage.setItem('user', JSON.stringify(state.user));
@@ -79,7 +93,5 @@ const authSlice = createSlice({
   },
 });
 
-// --- EXPORT THE ACTIONS HERE ---
 export const { logout, updateUser, setCredentials } = authSlice.actions;
-
 export default authSlice.reducer;
