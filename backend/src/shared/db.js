@@ -5,13 +5,18 @@ dotenv.config();
 
 const { Pool } = pg;
 
-// Check if we are in production to enable SSL
-const isProduction = process.env.NODE_ENV === 'production';
+// Helper: Check if the database URL points to a local instance
+const isLocal = process.env.DATABASE_URL && (
+  process.env.DATABASE_URL.includes('localhost') || 
+  process.env.DATABASE_URL.includes('127.0.0.1')
+);
 
 // 1. Create the Pool
-export const pool = new Pool({  
+export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  ssl: isProduction ? { rejectUnauthorized: false } : false 
+  // FIXED: If it's NOT local, we force SSL with rejectUnauthorized: false.
+  // This fixes the "EOF detected" error on cloud databases (Render/Neon/AWS).
+  ssl: isLocal ? false : { rejectUnauthorized: false } 
 });
 
 // --- CRITICAL FIX: Handle idle client errors to prevent crash ---
@@ -21,9 +26,14 @@ pool.on('error', (err, client) => {
 });
 
 // 2. Test connection on startup
-pool.connect()
-  .then(() => console.log(`DB Connected (SSL: ${isProduction ? 'Enabled' : 'Disabled'})`))
-  .catch(err => console.error('DB Connection Error:', err));
+// We use pool.query here because it automatically releases the client, preventing leaks
+pool.query('SELECT NOW()')
+  .then(() => console.log(`DB Connected (SSL: ${isLocal ? 'Disabled' : 'Enabled - Insecure Mode'})`))
+  .catch(err => {
+    console.error('DB Connection Error:', err);
+    // Optional: Log if DATABASE_URL is missing
+    if (!process.env.DATABASE_URL) console.error('FATAL: DATABASE_URL is missing from .env');
+  });
 
 // 3. Export the query helper
 export const query = (text, params) => pool.query(text, params);
