@@ -1,38 +1,44 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
+import { URL } from 'url'; // Native Node module to parse URLs
 
 dotenv.config();
 
 const { Pool } = pg;
 
-// Helper: Check if the database URL points to a local instance
-const isLocal = process.env.DATABASE_URL && (
-  process.env.DATABASE_URL.includes('localhost') || 
-  process.env.DATABASE_URL.includes('127.0.0.1')
-);
+// Helper: Manually parse the DB URL to ensure our SSL settings aren't overridden
+const getDbConfig = () => {
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DATABASE_URL is missing from .env');
+  }
 
-// 1. Create the Pool
-export const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
-  // FIXED: If it's NOT local, we force SSL with rejectUnauthorized: false.
-  // This fixes the "EOF detected" error on cloud databases (Render/Neon/AWS).
-  ssl: isLocal ? false : { rejectUnauthorized: false } 
-});
+  const params = new URL(process.env.DATABASE_URL);
 
-// --- CRITICAL FIX: Handle idle client errors to prevent crash ---
+  return {
+    user: params.username,
+    password: params.password,
+    host: params.hostname,
+    port: params.port,
+    database: params.pathname.split('/')[1], // Remove the leading '/'
+    ssl: {
+      rejectUnauthorized: false // This effectively solves the SELF_SIGNED_CERT error
+    }
+  };
+};
+
+// 1. Create the Pool using the manual config object
+export const pool = new Pool(getDbConfig());
+
+// --- Handle idle client errors ---
 pool.on('error', (err, client) => {
   console.error('Unexpected error on idle client', err);
-  // Do not exit the process; the pool will handle reconnection
 });
 
 // 2. Test connection on startup
-// We use pool.query here because it automatically releases the client, preventing leaks
 pool.query('SELECT NOW()')
-  .then(() => console.log(`DB Connected (SSL: ${isLocal ? 'Disabled' : 'Enabled - Insecure Mode'})`))
+  .then((res) => console.log(`✅ DB Connected! Time: ${res.rows[0].now}`))
   .catch(err => {
-    console.error('DB Connection Error:', err);
-    // Optional: Log if DATABASE_URL is missing
-    if (!process.env.DATABASE_URL) console.error('FATAL: DATABASE_URL is missing from .env');
+    console.error('❌ DB Connection Failed:', err);
   });
 
 // 3. Export the query helper
