@@ -6,14 +6,13 @@ const generateReferralCode = () => {
   return 'MAX-' + Math.random().toString(36).substring(2, 7).toUpperCase();
 };
 
-// --- 1. REGISTER USER (Updated with Trim & Lowercase) ---
+// --- 1. REGISTER USER (Auto-Login Added) ---
 export const register = async (req, res) => {
   let { email, password, fullName, referredByCode } = req.body;
   
-  // --- FIX: Clean Inputs ---
   if (email) email = email.trim().toLowerCase();
   if (fullName) fullName = fullName.trim();
-  if (referredByCode) referredByCode = referredByCode.trim().toUpperCase(); // Codes are usually uppercase
+  if (referredByCode) referredByCode = referredByCode.trim().toUpperCase();
 
   const client = await pool.connect();
 
@@ -45,12 +44,12 @@ export const register = async (req, res) => {
     const newUserRes = await client.query(
       `INSERT INTO users (email, password_hash, full_name, referral_code, referred_by_id) 
        VALUES ($1, $2, $3, $4, $5) 
-       RETURNING id, email, role, referral_code`,
+       RETURNING id, email, role, referral_code, full_name, current_tier, direct_referrals_count, level_1_count, level_2_count`,
       [email, hashedPassword, fullName, newReferralCode, referrerId]
     );
     const newUser = newUserRes.rows[0];
 
-    // D. OPTIMIZED TREE UPDATE
+    // D. Update Referral Tree
     if (referrerId) {
       const ancestorsRes = await client.query(`
         WITH RECURSIVE ancestor_tree AS (
@@ -82,9 +81,25 @@ export const register = async (req, res) => {
 
     await client.query('COMMIT');
 
+    // --- NEW: Generate Token for Auto-Login ---
+    const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+
     res.status(201).json({ 
       message: 'Welcome to Maxso!', 
-      user: newUser 
+      token, // <--- Return the token
+      user: {
+        id: newUser.id,
+        email: newUser.email,
+        role: newUser.role,
+        fullName: newUser.full_name,
+        referralCode: newUser.referral_code,
+        currentTier: newUser.current_tier || 'MEMBER',
+        stats: {
+          directs: 0,
+          level1: 0,
+          level2: 0
+        }
+      }
     });
 
   } catch (err) {
@@ -97,11 +112,9 @@ export const register = async (req, res) => {
   }
 };
 
-// --- 2. LOGIN USER (Updated with Trim & Lowercase) ---
+// --- 2. LOGIN USER (Unchanged) ---
 export const login = async (req, res) => {
   let { email, password } = req.body;
-
-  // --- FIX: Clean Inputs ---
   if (email) email = email.trim().toLowerCase();
 
   try {

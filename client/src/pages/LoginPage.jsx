@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom'; // <--- Added Link
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../redux/slices/authSlice';
-import api from '../api/axios'; // <--- IMPORT OUR NEW FILE
+import api from '../api/axios';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
 
 const LoginPage = () => {
@@ -16,13 +16,14 @@ const LoginPage = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      // <--- CHANGED: No more 'http://localhost:5000'
       const res = await api.post('/api/auth/login', { email, password });
       
       const user = res.data.user;
       const token = res.data.token;
 
       dispatch(setCredentials({ user, token }));
+
+      // Redundant backup (Redux handles this now, but safe to keep)
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 
@@ -102,8 +103,9 @@ const LoginPage = () => {
         </form>
 
         <div className="mt-6 text-center">
+          {/* --- CHANGED: Link to /register --- */}
           <p className="text-gray-600 text-sm">
-            Don't have an account? <span className="text-sr-gold cursor-pointer hover:underline">Contact Admin</span>
+            Don't have an account? <Link to="/register" className="text-sr-gold cursor-pointer hover:underline">Create Account</Link>
           </p>
         </div>
       </div>
