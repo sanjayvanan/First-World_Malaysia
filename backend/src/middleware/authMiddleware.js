@@ -1,28 +1,24 @@
 import jwt from 'jsonwebtoken';
 
-// 1. Authenticate Token
+// 1. Authenticate Token (Checks if user is logged in)
 export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; 
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
-  // Missing token -> 401
   if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
-    // FIX: Send 401 (Unauthorized) if the token is invalid/expired
-    // This makes the behavior consistent for both apps.
-    if (err) return res.status(401).json({ error: 'Invalid or expired token.' });
-    
-    req.user = user; 
+    if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
+    req.user = user; // Attach user info (id, role, email) to the request
     next();
   });
 };
 
-// 2. Authorize Role
+// 2. Authorize Role (Checks if user has the right permission)
+// This was missing!
 export const authorizeRole = (...allowedRoles) => {
   return (req, res, next) => {
-    // Keep this as 403 (Forbidden)
-    // This protects Admin pages from regular users without logging them out.
+    // If we haven't authenticated yet, or if the role doesn't match
     if (!req.user || !allowedRoles.includes(req.user.role)) {
       return res.status(403).json({ 
         error: `Access denied. Requires one of these roles: ${allowedRoles.join(', ')}` 
