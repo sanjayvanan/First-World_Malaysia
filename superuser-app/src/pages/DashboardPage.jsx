@@ -103,7 +103,11 @@ const DashboardPage = () => {
               <div className="w-8 h-8 bg-sr-gold rounded-full flex items-center justify-center text-sr-blue font-bold">
                 <Shield size={18} />
               </div>
-              <span className="text-xl font-bold text-white tracking-wider">MAXSO <span className="text-sr-gold">ADMIN</span></span>
+              <span className="text-xl font-bold text-white tracking-wider flex items-center">
+                <span>SR</span>
+                <span className="ml-2">First World</span>
+                <span className="ml-2 text-sr-gold">ADMIN</span>
+              </span>
             </div>
             <div className="flex items-center space-x-6">
               <div className="hidden md:block text-xs text-sr-gold uppercase tracking-widest">Superuser Access</div>

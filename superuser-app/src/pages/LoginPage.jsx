@@ -57,7 +57,7 @@ const LoginPage = () => {
             <Shield className="text-[#C5A059] w-8 h-8 drop-shadow-[0_0_8px_rgba(197,160,89,0.5)] transition-transform duration-500 group-hover:scale-110" />
           </div>
           <h1 className="text-2xl font-bold text-white tracking-widest uppercase">
-            Maxso <span className="text-[#C5A059]">Superuser</span>
+            SR First World <span className="text-[#C5A059]">Superuser</span>
           </h1>
           <div className="flex items-center justify-center gap-2 mt-2 opacity-60">
             <div className="w-1 h-1 rounded-full bg-[#C5A059] animate-pulse" />
@@ -83,7 +83,7 @@ const LoginPage = () => {
                 type="email" 
                 required
                 className="w-full bg-[#050914] border border-[#2a3655] rounded-lg px-4 py-3.5 text-white placeholder-gray-600 focus:border-[#C5A059] focus:ring-1 focus:ring-[#C5A059]/50 focus:outline-none transition-all duration-300 pl-10"
-                placeholder="admin@maxso.com"
+                placeholder="admin@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

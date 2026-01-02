@@ -79,7 +79,7 @@ const RegisterPage = () => {
       <div className="w-full max-w-md bg-sr-panel border border-sr-gold/20 rounded-2xl p-8 shadow-[0_0_40px_rgba(0,0,0,0.5)] relative z-10 backdrop-blur-sm">
         <div className="text-center mb-6">
            <h1 className="text-4xl font-serif text-white tracking-tighter mb-2">
-             MAX<span className="text-sr-gold">SO</span>
+             SR<span className="text-sr-gold">First World</span>
            </h1>
            <p className="text-gray-400 text-xs tracking-[0.2em] uppercase">New Member Registration</p>
         </div>
