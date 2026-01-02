@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';
+import cors from 'cors'; // <--- FIX: MUST BE 'cors', NOT 'express'
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -17,68 +17,56 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-/* ---------------------- SECURITY ---------------------- */
-
+// 1. SECURITY HEADERS
 app.use(helmet());
 
+// 2. RATE LIMITING
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 15 * 60 * 1000, 
+  max: 100, 
   message: 'Too many requests from this IP, please try again later.'
 });
 app.use('/api/', limiter);
 
-/* ---------------------- CORS (HARDENED) ---------------------- */
-
-const allowedOrigins = new Set([
-  "https://srfirstworld.org",
-  "https://www.srfirstworld.org",
-  "https://srfirstworld.co",
-  "https://www.srfirstworld.co",
+// 3. STRICT CORS (Fixed Logic)
+const allowedOrigins = [
   process.env.CLIENT_URL,
   process.env.SUPERUSER_URL
-].filter(Boolean).map(o => o.trim()));
+].map(origin => origin ? origin.trim() : null).filter(Boolean); // <--- Trims spaces to prevent errors
 
 const corsOptions = {
-  origin(origin, callback) {
-    if (!origin || allowedOrigins.has(origin)) {
-      return callback(null, true);
-    }
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman testing)
+    if (!origin) return callback(null, true);
 
-    console.warn("🚫 Blocked by CORS:", origin);
-    callback(new Error("Not allowed by CORS"));
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`Blocked by CORS: ${origin}`); // Debug log
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
   },
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"],
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+  credentials: true
 };
 
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-/* ---------------------- MIDDLEWARE ---------------------- */
-
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 
-/* ---------------------- ROUTES ---------------------- */
-
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/kyc', kycRoutes);
 app.use('/api/superuser', superuserRoutes);
 app.use('/api/admin', adminRoutes);
 
-/* ---------------------- ERROR HANDLER ---------------------- */
-
+// Global Error Handler
 app.use((err, req, res, next) => {
-  console.error("🔥 Server Error:", err.stack);
+  console.error("Server Error:", err.stack);
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-/* ---------------------- START SERVER ---------------------- */
-
 app.listen(PORT, () => {
-  console.log(`🚀 Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  console.log(`✅ Allowed Origins:`, [...allowedOrigins]);
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`Allowed Origins:`, allowedOrigins); // Log this to verify it reads .env correctly
 });
