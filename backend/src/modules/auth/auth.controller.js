@@ -85,7 +85,7 @@ export const register = async (req, res) => {
     const token = jwt.sign({ id: newUser.id, role: newUser.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     res.status(201).json({ 
-      message: 'Welcome to Maxso!', 
+      message: 'Welcome to SR First World!', 
       token, // <--- Return the token
       user: {
         id: newUser.id,
