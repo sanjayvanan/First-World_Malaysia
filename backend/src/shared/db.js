@@ -1,12 +1,11 @@
 import pg from 'pg';
 import dotenv from 'dotenv';
-import { URL } from 'url'; // Native Node module to parse URLs
+import { URL } from 'url';
 
 dotenv.config();
 
 const { Pool } = pg;
 
-// Helper: Manually parse the DB URL to ensure our SSL settings aren't overridden
 const getDbConfig = () => {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is missing from .env');
@@ -19,27 +18,29 @@ const getDbConfig = () => {
     password: params.password,
     host: params.hostname,
     port: params.port,
-    database: params.pathname.split('/')[1], // Remove the leading '/'
+    database: params.pathname.split('/')[1],
     ssl: {
-      rejectUnauthorized: false // This effectively solves the SELF_SIGNED_CERT error
-    }
+      rejectUnauthorized: false
+    },
+    // --- STABILITY SETTINGS (TUNED) ---
+    max: 10,                 // Keep this low for free tier
+    idleTimeoutMillis: 30000, // Keep this to prevent "reset by peer" errors
+    connectionTimeoutMillis: 10000, // CHANGED: Increased to 10s to allow "Cold Starts"
   };
 };
 
-// 1. Create the Pool using the manual config object
 export const pool = new Pool(getDbConfig());
 
-// --- Handle idle client errors ---
+// Prevent crashes on unexpected disconnects
 pool.on('error', (err, client) => {
-  console.error('Unexpected error on idle client', err);
+  console.error('Silenced a DB connection error:', err);
 });
 
-// 2. Test connection on startup
+// Test connection
 pool.query('SELECT NOW()')
   .then((res) => console.log(`✅ DB Connected! Time: ${res.rows[0].now}`))
   .catch(err => {
     console.error('❌ DB Connection Failed:', err);
   });
 
-// 3. Export the query helper
 export const query = (text, params) => pool.query(text, params);
