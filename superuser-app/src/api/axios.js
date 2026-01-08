@@ -13,8 +13,13 @@ const api = axios.create({
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response && error.response.status === 401) {
-      // Clear storage and force redirect
+    // 1. Check if the error is 401
+    // 2. AND check if the request URL is NOT the login endpoint
+    //    (This prevents the page from refreshing if you just typed the wrong password)
+    const isLoginRequest = error.config && error.config.url.includes('/login');
+
+    if (error.response && error.response.status === 401 && !isLoginRequest) {
+      // Clear storage and force redirect only for expired sessions
       localStorage.removeItem('superuser_token');
       localStorage.removeItem('superuser_user');
       window.location.href = '/login';
