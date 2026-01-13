@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux'; // <--- Added useSelector
 import { setCredentials } from '../redux/slices/authSlice';
 import api from '../api/axios';
 import { Lock, Mail, User, Gift, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -10,12 +10,27 @@ const RegisterPage = () => {
     fullName: '',
     email: '',
     password: '',
-    confirmPassword: '', // <--- NEW Field
+    confirmPassword: '', 
     referredByCode: ''
   });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // 1. Get current auth state from Redux
+  const { token, user } = useSelector((state) => state.auth);
+
+  // 2. PROTECT ROUTE: Redirect if already logged in
+  useEffect(() => {
+    if (token && user) {
+      // If they are an ADMIN, send to admin panel, otherwise Dashboard
+      if (user.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [token, user, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -24,7 +39,7 @@ const RegisterPage = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
 
-    // 1. Validation: Check Passwords Match
+    // Validation
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
@@ -32,8 +47,6 @@ const RegisterPage = () => {
 
     setLoading(true);
     try {
-      // 2. Call Register API
-      // We exclude confirmPassword from the payload sent to backend
       const payload = {
         fullName: formData.fullName,
         email: formData.email,
@@ -43,21 +56,17 @@ const RegisterPage = () => {
 
       const res = await api.post('/api/auth/register', payload);
       
-      // 3. AUTO LOGIN: Extract User & Token from response
       const { user, token } = res.data;
 
       if (token && user) {
-        // Update Redux State
+        // Update Redux & LocalStorage
         dispatch(setCredentials({ user, token }));
-        
-        // Update LocalStorage (Backup)
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user));
 
-        // 4. Redirect directly to Dashboard
+        // Navigate to Dashboard immediately
         navigate('/dashboard');
       } else {
-        // Fallback if no token (shouldn't happen with new backend)
         alert('Registration Successful! Please login.');
         navigate('/login');
       }
@@ -69,6 +78,9 @@ const RegisterPage = () => {
       setLoading(false);
     }
   };
+
+  // Prevent "flash" of content before redirect happens
+  if (token && user) return null;
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
@@ -144,7 +156,7 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          {/* Confirm Password (NEW) */}
+          {/* Confirm Password */}
           <div className="group">
             <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-sr-gold transition-colors">Confirm Password</label>
             <div className="relative">
@@ -164,7 +176,7 @@ const RegisterPage = () => {
             </div>
           </div>
 
-          {/* Referral Code (Optional) */}
+          {/* Referral Code */}
           <div className="group">
             <label className="block text-xs font-bold text-gray-500 mb-1 uppercase tracking-wider group-focus-within:text-sr-gold transition-colors">Referral Code (Optional)</label>
             <div className="relative">

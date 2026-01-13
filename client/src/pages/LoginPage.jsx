@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom'; // <--- Added Link
-import { useDispatch } from 'react-redux';
+import React, { useState, useEffect } from 'react'; // <--- Added useEffect
+import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux'; // <--- Added useSelector
 import { setCredentials } from '../redux/slices/authSlice';
 import api from '../api/axios';
 import { Lock, Mail, ArrowRight } from 'lucide-react';
@@ -9,8 +9,24 @@ const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // 1. Get current auth state from Redux
+  const { token, user } = useSelector((state) => state.auth);
+
+  // 2. NEW: Check if already logged in
+  useEffect(() => {
+    // If we have a token and user, they shouldn't be here.
+    if (token && user) {
+      if (user.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [token, user, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -40,6 +56,11 @@ const LoginPage = () => {
       setLoading(false);
     }
   };
+
+  // If we are logged in, we might briefly see the form before redirecting.
+  // You can return null here to avoid a "flash" of content, 
+  // but usually, it's fast enough to not matter.
+  if (token && user) return null; 
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
@@ -103,7 +124,6 @@ const LoginPage = () => {
         </form>
 
         <div className="mt-6 text-center">
-          {/* --- CHANGED: Link to /register --- */}
           <p className="text-gray-600 text-sm">
             Don't have an account? <Link to="/register" className="text-sr-gold cursor-pointer hover:underline">Create Account</Link>
           </p>

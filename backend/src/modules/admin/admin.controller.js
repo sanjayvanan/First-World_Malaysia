@@ -1,18 +1,18 @@
 import { query } from '../../shared/db.js';
 
-// --- UPDATED: Get Stats for My Assigned Users ---
+// --- UPDATED: Get Stats for ALL Assigned Users (Shared View) ---
 export const getAdminStats = async (req, res) => {
-  const adminId = req.user.id;
+  // We no longer filter by "req.user.id". 
+  // Any Admin sees stats for ALL assigned users.
   try {
-    const totalRes = await query('SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1', [adminId]);
+    const totalRes = await query('SELECT COUNT(*) FROM users WHERE assigned_admin_id IS NOT NULL');
     
-    // CHANGED: We now count 'SUBMITTED' (People waiting for you) instead of 'PENDING'
-    const submittedRes = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1 AND kyc_status = 'SUBMITTED'", [adminId]);
-    const approvedRes = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id = $1 AND kyc_status = 'APPROVED'", [adminId]);
+    const submittedRes = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id IS NOT NULL AND kyc_status = 'SUBMITTED'");
+    const approvedRes = await query("SELECT COUNT(*) FROM users WHERE assigned_admin_id IS NOT NULL AND kyc_status = 'APPROVED'");
     
     res.json({
       totalAssigned: parseInt(totalRes.rows[0].count),
-      submittedKYC: parseInt(submittedRes.rows[0].count), // <--- Send 'submitted' count
+      submittedKYC: parseInt(submittedRes.rows[0].count),
       approvedKYC: parseInt(approvedRes.rows[0].count)
     });
   } catch (err) {
@@ -21,19 +21,20 @@ export const getAdminStats = async (req, res) => {
   }
 };
 
-// --- UPDATED: Get Users with FILTER ---
+// --- UPDATED: Get Users with FILTER (Shared View) ---
 export const getMyAssignedUsers = async (req, res) => {
-  const adminId = req.user.id; 
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
   const search = req.query.search || ''; 
-  const kycStatus = req.query.kycStatus || ''; // <--- Capture Filter
+  const kycStatus = req.query.kycStatus || ''; 
   const offset = (page - 1) * limit;
 
   try {
-    let whereClause = `WHERE u.assigned_admin_id = $1`;
-    let params = [adminId];
-    let paramIndex = 2;
+    // OLD LOGIC: WHERE u.assigned_admin_id = $1
+    // NEW LOGIC: WHERE u.assigned_admin_id IS NOT NULL
+    let whereClause = `WHERE u.assigned_admin_id IS NOT NULL`;
+    let params = [];
+    let paramIndex = 1; // Reset index to 1 since we removed adminId
 
     // Apply Filter if selected
     if (kycStatus && kycStatus !== 'ALL') {
@@ -62,6 +63,7 @@ export const getMyAssignedUsers = async (req, res) => {
       LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
     `;
     
+    // Add Limit and Offset to params
     const dataParams = [...params, limit, offset];
     const result = await query(dataQuery, dataParams);
 
