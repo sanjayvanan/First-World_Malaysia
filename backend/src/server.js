@@ -12,6 +12,7 @@ import kycRoutes from './modules/kyc/kyc.routes.js';
 import superuserRoutes from './modules/superuser/superuser.routes.js';
 import adminRoutes from './modules/admin/admin.routes.js';
 import plansRoutes from './modules/plans/plans.routes.js';
+import settingsRoutes from './modules/settings/settings.routes.js';
 
 dotenv.config();
 
@@ -61,6 +62,7 @@ app.use('/api/kyc', kycRoutes);
 app.use('/api/superuser', superuserRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/plans', plansRoutes);
+app.use('/api/settings', settingsRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

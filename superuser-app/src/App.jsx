@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import PlansManager from './pages/PlansManager'; // Ensure this exists from previous step
 import Layout from './components/Layout'; // Import the new Layout
+import SettingsPage from './pages/SettingsPage';
 
 // Guard
 const ProtectedRoute = ({ children }) => {
@@ -35,6 +36,7 @@ function App() {
         }>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/plans" element={<PlansManager />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Route>
         
         <Route path="*" element={<NotFound />} />

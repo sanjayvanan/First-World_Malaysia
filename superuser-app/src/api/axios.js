@@ -9,17 +9,26 @@ const api = axios.create({
   }
 });
 
-// --- ADD INTERCEPTOR ---
+// 1. NEW: REQUEST INTERCEPTOR (Attaches Token)
+api.interceptors.request.use(
+  (config) => {
+    // Get token from Superuser storage
+    const token = localStorage.getItem('superuser_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// 2. EXISTING: RESPONSE INTERCEPTOR (Handles 401 Logout)
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 1. Check if the error is 401
-    // 2. AND check if the request URL is NOT the login endpoint
-    //    (This prevents the page from refreshing if you just typed the wrong password)
     const isLoginRequest = error.config && error.config.url.includes('/login');
 
     if (error.response && error.response.status === 401 && !isLoginRequest) {
-      // Clear storage and force redirect only for expired sessions
       localStorage.removeItem('superuser_token');
       localStorage.removeItem('superuser_user');
       window.location.href = '/login';

@@ -97,7 +97,7 @@ const DashboardPage = () => {
       <div className="flex justify-center">
         <div className="relative w-full max-w-3xl rounded-xl border-2 border-sr-gold/50 bg-black shadow-[0_0_40px_rgba(197,160,89,0.1)] overflow-hidden group">
             <div className="absolute inset-0 bg-sr-gold/5 blur-[80px] pointer-events-none" />
-            <img src="/Baba.jpeg" alt="Sai Baba" className="w-full h-auto max-h-[400px] object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity duration-700" />
+            <img src="/Baba-withoutWatermark.jpeg" alt="Sai Baba" className="w-full h-auto max-h-[400px] object-cover object-top opacity-90 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="absolute inset-3 border border-sr-gold/20 rounded-lg pointer-events-none" />
         </div>
       </div>

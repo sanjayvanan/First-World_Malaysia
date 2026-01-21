@@ -10,6 +10,7 @@ import PlansPage from './pages/PlansPage';
 import NetworkPage from './pages/NetworkPage';
 import KycPage from './pages/KycPage';
 import NotFoundPage from './pages/NotFoundPage';
+import DonatePage from './pages/DonatePage';
 
 // Helper: Protects routes and ensures Role separation
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -61,6 +62,7 @@ function App() {
           <Route index element={<DashboardPage />} />
           <Route path="plans" element={<PlansPage />} />
           <Route path="network" element={<NetworkPage />} />
+          <Route path="donate" element={<DonatePage />} />
           <Route path="kyc" element={<KycPage />} />
           <Route path="*" element={<NotFoundPage />} /> 
         </Route>
@@ -73,9 +75,9 @@ function App() {
           path="/" 
           element={token ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} 
         />
-
         {/* Global Catch-All */}
         <Route path="*" element={<NotFoundPage />} />
+
       </Routes>
     </Router>
   );
