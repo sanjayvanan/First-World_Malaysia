@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors';
+import cors from 'cors'; // <--- FIX: MUST BE 'cors', NOT 'express'
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -19,42 +19,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ==========================================
-// 1. CORS (MUST BE AT THE VERY TOP)
-// ==========================================
-const allowedOrigins = [
-  'https://ci9pb4z5.up.railway.app',
-  'https://app.srfirstworld.co',
-  'https://srfirstworld.org',
-  'https://www.srfirstworld.org',
-  'https://srfirstworld.co',
-  'https://www.srfirstworld.co',
-  'http://localhost:5173',
-  'http://localhost:5174'
-];
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      console.log(`Blocked by CORS: ${origin}`);
-      callback(new Error(`CORS blocked: ${origin}`));
-    }
-  },
-  credentials: true
-};
-
-app.use(cors(corsOptions));
-
-// ==========================================
-// 2. MIDDLEWARE
-// ==========================================
+// 1. SECURITY HEADERS
 app.use(helmet());
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(express.json());
 
+// 2. RATE LIMITING
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 100, 
@@ -62,9 +30,32 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// ==========================================
-// 3. ROUTES
-// ==========================================
+// 3. STRICT CORS (Fixed Logic)
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  process.env.SUPERUSER_URL
+].map(origin => origin ? origin.trim() : null).filter(Boolean); // <--- Trims spaces to prevent errors
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or Postman testing)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log(`Blocked by CORS: ${origin}`); // Debug log
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions));
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(express.json());
+
+// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/kyc', kycRoutes);
@@ -79,15 +70,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// ==========================================
-// 4. SERVER START (THE FIX IS HERE)
-// ==========================================
-// '0.0.0.0' is REQUIRED for Railway to see the app
-app.listen(PORT, '0.0.0.0', () => {
-  console.log("---------------------------------------------------------");
-  console.log(`🚀 SERVER STARTED SUCCESSFULLY ON PORT ${PORT}`);
-  console.log(`🚀 LISTENING ON ADDRESS: 0.0.0.0 (PUBLIC)`);
-  console.log(`🚀 DEPLOYMENT VERSION: ROCKET TEST`);
-  console.log("---------------------------------------------------------");
-  console.log(`Allowed Origins:`, allowedOrigins); 
+app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log(`Allowed Origins:`, allowedOrigins); // Log this to verify it reads .env correctly
 });
