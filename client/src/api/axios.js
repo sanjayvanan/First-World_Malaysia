@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Ensure this points to your LIVE backend
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://first-worldmalaysia-production.up.railway.app';
 
 const api = axios.create({
   baseURL: BASE_URL,

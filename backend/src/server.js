@@ -33,7 +33,16 @@ app.use('/api/', limiter);
 // 3. STRICT CORS (Fixed Logic)
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  process.env.SUPERUSER_URL
+  process.env.SUPERUSER_URL,
+  'https://ci9pb4z5.up.railway.app',  // Your Backend (Internal)
+  'https://app.srfirstworld.co',      // Superuser App
+  'https://srfirstworld.org',         // Client App 1
+  'https://www.srfirstworld.org',     // Client App 1 (www)
+  'https://srfirstworld.co',          // Client App 2
+  'https://www.srfirstworld.co',      // Client App 2 (www)
+  'http://localhost:5173',            // Local Testing
+  'http://localhost:5174'             // Local Testing
+
 ].map(origin => origin ? origin.trim() : null).filter(Boolean); // <--- Trims spaces to prevent errors
 
 const corsOptions = {
