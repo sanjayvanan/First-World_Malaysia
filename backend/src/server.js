@@ -20,7 +20,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ==========================================
-// 1. CORS MUST BE FIRST (The Fix)
+// 1. CORS (MUST BE AT THE VERY TOP)
 // ==========================================
 const allowedOrigins = [
   'https://ci9pb4z5.up.railway.app',
@@ -46,16 +46,15 @@ const corsOptions = {
   credentials: true
 };
 
-app.use(cors(corsOptions)); // <--- MOVED TO TOP
+app.use(cors(corsOptions));
 
 // ==========================================
-// 2. OTHER MIDDLEWARE
+// 2. MIDDLEWARE
 // ==========================================
 app.use(helmet());
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(express.json());
 
-// Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 100, 
@@ -80,7 +79,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
+// ==========================================
+// 4. SERVER START (THE FIX IS HERE)
+// ==========================================
+// '0.0.0.0' is REQUIRED for Railway to see the app
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  console.log("---------------------------------------------------------");
+  console.log(`🚀 SERVER STARTED SUCCESSFULLY ON PORT ${PORT}`);
+  console.log(`🚀 LISTENING ON ADDRESS: 0.0.0.0 (PUBLIC)`);
+  console.log(`🚀 DEPLOYMENT VERSION: ROCKET TEST`);
+  console.log("---------------------------------------------------------");
   console.log(`Allowed Origins:`, allowedOrigins); 
 });
