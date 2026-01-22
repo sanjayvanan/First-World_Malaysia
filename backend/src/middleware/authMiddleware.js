@@ -2,8 +2,7 @@ import jwt from 'jsonwebtoken';
 
 // 1. Authenticate Token
 export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization; 
-
+  const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Access denied. No token provided.' });
   }
@@ -12,12 +11,8 @@ export const authenticateToken = (req, res, next) => {
 
   jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
     if (err) {
-      if (err.name === 'TokenExpiredError') {
-        return res.status(401).json({ error: 'Session expired. Please log in again.' });
-      }
-      return res.status(401).json({ error: 'Invalid authentication token.' });
+      return res.status(401).json({ error: 'Invalid or expired token.' });
     }
-
     req.user = user;
     next();
   });
@@ -37,6 +32,5 @@ export const authorizeRole = (...allowedRoles) => {
   };
 };
 
-// 3. Require SuperUser (The missing part)
-// This reuses the logic above to create the specific middleware you need.
+// 3. THIS WAS MISSING - ADD IT NOW
 export const requireSuperUser = authorizeRole('SUPERUSER');
