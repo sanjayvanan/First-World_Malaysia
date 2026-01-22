@@ -1,5 +1,5 @@
 import express from 'express';
-import cors from 'cors'; // <--- FIX: MUST BE 'cors', NOT 'express'
+import cors from 'cors';
 import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -19,10 +19,43 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// 1. SECURITY HEADERS
-app.use(helmet());
+// ==========================================
+// 1. CORS MUST BE FIRST (The Fix)
+// ==========================================
+const allowedOrigins = [
+  'https://ci9pb4z5.up.railway.app',
+  'https://app.srfirstworld.co',
+  'https://srfirstworld.org',
+  'https://www.srfirstworld.org',
+  'https://srfirstworld.co',
+  'https://www.srfirstworld.co',
+  'http://localhost:5173',
+  'http://localhost:5174'
+];
 
-// 2. RATE LIMITING
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`Blocked by CORS: ${origin}`);
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
+  credentials: true
+};
+
+app.use(cors(corsOptions)); // <--- MOVED TO TOP
+
+// ==========================================
+// 2. OTHER MIDDLEWARE
+// ==========================================
+app.use(helmet());
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(express.json());
+
+// Rate Limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
   max: 100, 
@@ -30,41 +63,9 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// 3. STRICT CORS (Fixed Logic)
-const allowedOrigins = [
-  process.env.CLIENT_URL,
-  process.env.SUPERUSER_URL,
-  'https://ci9pb4z5.up.railway.app',  // Your Backend (Internal)
-  'https://app.srfirstworld.co',      // Superuser App
-  'https://srfirstworld.org',         // Client App 1
-  'https://www.srfirstworld.org',     // Client App 1 (www)
-  'https://srfirstworld.co',          // Client App 2
-  'https://www.srfirstworld.co',      // Client App 2 (www)
-  'http://localhost:5173',            // Local Testing
-  'http://localhost:5174'             // Local Testing
-
-].map(origin => origin ? origin.trim() : null).filter(Boolean); // <--- Trims spaces to prevent errors
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or Postman testing)
-    if (!origin) return callback(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log(`Blocked by CORS: ${origin}`); // Debug log
-      callback(new Error(`CORS blocked: ${origin}`));
-    }
-  },
-  credentials: true
-};
-
-app.use(cors(corsOptions));
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-app.use(express.json());
-
-// Routes
+// ==========================================
+// 3. ROUTES
+// ==========================================
 app.use('/api/auth', authRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/kyc', kycRoutes);
@@ -81,5 +82,5 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  console.log(`Allowed Origins:`, allowedOrigins); // Log this to verify it reads .env correctly
+  console.log(`Allowed Origins:`, allowedOrigins); 
 });
