@@ -114,10 +114,19 @@ export const register = async (req, res) => {
 
 // --- 2. LOGIN USER (Unchanged) ---
 export const login = async (req, res) => {
+  console.log("👉 Login Attempt Started for:", req.body.email);
+
+  // 1. Check for Config Errors (Debug)
+  if (!process.env.JWT_SECRET) {
+    console.error("❌ CRITICAL ERROR: JWT_SECRET is missing!");
+    return res.status(500).json({ error: 'Server Configuration Error' });
+  }
+
   let { email, password } = req.body;
   if (email) email = email.trim().toLowerCase();
 
   try {
+    // 2. Find User (USING YOUR SQL POOL)
     const result = await pool.query(
         `SELECT id, email, password_hash, role, full_name, referral_code, 
                 current_tier, direct_referrals_count, level_1_count, level_2_count 
@@ -125,13 +134,28 @@ export const login = async (req, res) => {
         [email]
     );
 
-    if (result.rows.length === 0) return res.status(400).json({ error: 'Invalid credentials' });
+    if (result.rows.length === 0) {
+      console.log("❌ Login Failed: User not found in DB");
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
 
     const user = result.rows[0];
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' });
 
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    // 3. Check Password
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      console.log("❌ Login Failed: Password mismatch");
+      return res.status(400).json({ error: 'Invalid credentials' });
+    }
+
+    // 4. Generate Token
+    const token = jwt.sign(
+      { id: user.id, role: user.role }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1d' }
+    );
+
+    console.log("✅ Login Success! Sending response...");
 
     res.json({ 
       message: 'Login successful',
@@ -152,7 +176,7 @@ export const login = async (req, res) => {
     });
 
   } catch (err) {
-    console.error('Login Error:', err);
-    res.status(500).json({ error: 'Login failed' });
+    console.error("🔥 LOGIN CRASHED:", err); // NOW YOU WILL SEE THE REAL ERROR
+    res.status(500).json({ error: 'Login failed due to server error' });
   }
 };
